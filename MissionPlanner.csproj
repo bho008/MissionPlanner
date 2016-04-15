@@ -8,25 +8,24 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>MissionPlanner</RootNamespace>
     <AssemblyName>MissionPlanner</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
-    <IsWebBootstrapper>true</IsWebBootstrapper>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">.\</SolutionDir>
     <RestorePackages>true</RestorePackages>
+    <NuGetPackageImportStamp>8c4aca6f</NuGetPackageImportStamp>
     <PublishUrl>C:\publish\MissionPlanner\</PublishUrl>
     <Install>true</Install>
-    <InstallFrom>Web</InstallFrom>
-    <UpdateEnabled>true</UpdateEnabled>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
     <UpdateMode>Foreground</UpdateMode>
     <UpdateInterval>7</UpdateInterval>
     <UpdateIntervalUnits>Days</UpdateIntervalUnits>
     <UpdatePeriodically>true</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>false</MapFileExtensions>
-    <InstallUrl>http://firmware.ardupilot.org/MissionPlanner/upgrade/</InstallUrl>
-    <UpdateUrl>http://firmware.ardupilot.org/MissionPlanner/upgrade/</UpdateUrl>
     <TargetCulture>en-US</TargetCulture>
     <ProductName>MissionPlanner</ProductName>
     <PublisherName>Michael Oborne</PublisherName>
@@ -37,7 +36,6 @@
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <NuGetPackageImportStamp>8c4aca6f</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -205,6 +203,7 @@
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="Transitions">
@@ -300,6 +299,12 @@
     </Compile>
     <Compile Include="Controls\Icon\Icon.cs" />
     <Compile Include="Controls\Icon\Polygon.cs" />
+    <Compile Include="Controls\Loading.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Controls\Loading.Designer.cs">
+      <DependentUpon>Loading.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controls\LogAnalyzer.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -509,6 +514,12 @@
     </Compile>
     <Compile Include="GCSViews\ConfigurationView\ConfigHWAirspeed.Designer.cs">
       <DependentUpon>ConfigHWAirspeed.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigHWesp8266.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GCSViews\ConfigurationView\ConfigHWesp8266.Designer.cs">
+      <DependentUpon>ConfigHWesp8266.cs</DependentUpon>
     </Compile>
     <Compile Include="GCSViews\ConfigurationView\ConfigHWBT.cs">
       <SubType>UserControl</SubType>
@@ -726,6 +737,11 @@
       <DependentUpon>LogIndex.cs</DependentUpon>
     </Compile>
     <Compile Include="Log\LogMap.cs" />
+    <Compile Include="Log\LogStrings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>LogStrings.resx</DependentUpon>
+    </Compile>
     <Compile Include="Maps\MapboxNoFly.cs" />
     <Compile Include="Maps\Mapbox.cs" />
     <Compile Include="Maps\Earthbuilder.cs" />
@@ -804,18 +820,11 @@
     <Compile Include="Utilities\AP_GPS_GSOF.cs" />
     <Compile Include="Utilities\AP_GPS_SBF.cs" />
     <Compile Include="Utilities\AP_Terrain.cs" />
+    <Compile Include="Utilities\GMapMarkerOverlapCount.cs" />
+    <Compile Include="Utilities\GMapMarkerPOI.cs" />
+    <Compile Include="Utilities\GMapMarkerPhoto.cs" />
     <Compile Include="Utilities\GStreamer.cs" />
     <Compile Include="Utilities\Crypto.cs" />
-    <Compile Include="Utilities\DroneApi\APIConstants.cs" />
-    <Compile Include="Utilities\DroneApi\droneapi-protobuf.cs" />
-    <Compile Include="Utilities\DroneApi\DroneProto.cs" />
-    <Compile Include="Utilities\DroneApi\droneshare.cs" />
-    <Compile Include="Utilities\DroneApi\UI\VehicleSelection.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Utilities\DroneApi\UI\VehicleSelection.Designer.cs">
-      <DependentUpon>VehicleSelection.cs</DependentUpon>
-    </Compile>
     <Compile Include="Utilities\fft.cs" />
     <Compile Include="Utilities\fftui.cs">
       <SubType>Form</SubType>
@@ -829,6 +838,7 @@
     <Compile Include="Utilities\GitHubContent.cs" />
     <Compile Include="Utilities\GMapMarkerAirport.cs" />
     <Compile Include="Utilities\GMapMarkerRallyPt.cs" />
+    <Compile Include="Utilities\ImageProjection.cs" />
     <Compile Include="Utilities\LineOffset.cs" />
     <Compile Include="Utilities\LogAnalyzer.cs" />
     <Compile Include="NoFly\NoFly.cs" />
@@ -933,6 +943,9 @@
     <Compile Include="Wizard\Wizard.Designer.cs">
       <DependentUpon>Wizard.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="Controls\Loading.resx">
+      <DependentUpon>Loading.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigAccelerometerCalibration.de-DE.resx">
       <DependentUpon>ConfigAccelerometerCalibration.cs</DependentUpon>
     </EmbeddedResource>
@@ -1472,6 +1485,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigHWAirspeed.zh-TW.resx">
       <DependentUpon>ConfigHWAirspeed.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigHWesp8266.resx">
+      <DependentUpon>ConfigHWesp8266.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\ConfigurationView\ConfigHWBT.id-ID.resx">
       <DependentUpon>ConfigHWBT.cs</DependentUpon>
@@ -2124,6 +2140,10 @@
     </EmbeddedResource>
     <EmbeddedResource Include="GCSViews\Terminal.zh-TW.resx">
       <DependentUpon>Terminal.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Log\LogStrings.resx">
+      <LastGenOutput>LogStrings.Designer.cs</LastGenOutput>
+      <Generator>PublicResXFileCodeGenerator</Generator>
     </EmbeddedResource>
     <EmbeddedResource Include="Wizard\10FlightModes.id-ID.resx">
       <DependentUpon>10FlightModes.cs</DependentUpon>
@@ -2805,9 +2825,6 @@
       <SubType>Designer</SubType>
       <LastGenOutput>Strings.zh-Hans.Designer.cs</LastGenOutput>
       <Generator>ResXFileCodeGenerator</Generator>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Utilities\DroneApi\UI\VehicleSelection.resx">
-      <DependentUpon>VehicleSelection.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Utilities\fftui.resx">
       <DependentUpon>fftui.cs</DependentUpon>
@@ -3664,6 +3681,8 @@
     <Content Include="ParameterFactMetaData.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Include="Resources\camera-icon.png" />
+    <None Include="Resources\camera-icon-G.png" />
     <Content Include="Scripts\example7.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -7279,9 +7298,6 @@
     <Content Include="Scripts\example1.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <None Include="Utilities\DroneApi\webapi.proto">
-      <Generator>ProtoBufTool</Generator>
-    </None>
     <None Include="version.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

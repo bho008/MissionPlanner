@@ -74,6 +74,7 @@ namespace MissionPlanner.GCSViews
         internal static GMapOverlay kmlpolygons;
         internal static GMapOverlay geofence;
         internal static GMapOverlay rallypointoverlay;
+        internal static GMapOverlay photosoverlay;
         internal static GMapOverlay poioverlay = new GMapOverlay("POI"); // poi layer
 
         List<TabPage> TabListOriginal = new List<TabPage>();
@@ -121,7 +122,7 @@ namespace MissionPlanner.GCSViews
             if (CurrentGMapMarker == null)
                 return;
 
-            POI.POIDelete(CurrentGMapMarker.Position);
+            POI.POIDelete((GMapMarkerPOI)CurrentGMapMarker);
         }
 
         private void addPoiToolStripMenuItem_Click(object sender, EventArgs e)
@@ -133,7 +134,6 @@ namespace MissionPlanner.GCSViews
         {
             POI.POISave();
         }
-
 
         protected override void Dispose(bool disposing)
         {
@@ -307,6 +307,9 @@ namespace MissionPlanner.GCSViews
 
             polygons = new GMapOverlay("polygons");
             gMapControl1.Overlays.Add(polygons);
+
+            photosoverlay = new GMapOverlay("photos overlay");
+            gMapControl1.Overlays.Add(photosoverlay);
 
             routes = new GMapOverlay("routes");
             gMapControl1.Overlays.Add(routes);
@@ -562,6 +565,11 @@ namespace MissionPlanner.GCSViews
 
             CheckBatteryShow();
 
+            // make sure the hud user items/warnings/checklist are using the current state
+            HUD.Custom.src = MainV2.comPort.MAV.cs;
+            CustomWarning.defaultsrc = MainV2.comPort.MAV.cs;
+            MissionPlanner.Controls.PreFlight.CheckListItem.defaultsrc = MainV2.comPort.MAV.cs;
+
             if (Settings.Instance["maplast_lat"] != "")
             {
                 try
@@ -788,6 +796,33 @@ namespace MissionPlanner.GCSViews
             {
                 tabControlactions.SelectedIndex = 9;
                 return true;
+            }
+
+            if (keyData == (Keys.Space))
+            {
+                if (MainV2.comPort.logplaybackfile != null)
+                {
+                    BUT_playlog_Click(null, null);
+                    return true;
+                }
+            }
+            else if (keyData == (Keys.Subtract))
+            {
+                if (LogPlayBackSpeed > 1)
+                    LogPlayBackSpeed--;
+                else
+                    LogPlayBackSpeed /= 2;
+
+                updateLogPlayPosition();
+            }
+            else if (keyData == (Keys.Add))
+            {
+                if (LogPlayBackSpeed > 1)
+                    LogPlayBackSpeed++;
+                else
+                    LogPlayBackSpeed *= 2;
+
+                updateLogPlayPosition();
             }
 
             return false;
@@ -1068,42 +1103,18 @@ namespace MissionPlanner.GCSViews
 
                         gMapControl1.HoldInvalidation = true;
 
-                        int cnt = 0;
-
-                        while (gMapControl1.inOnPaint)
-                        {
-                            Thread.Sleep(1);
-                            cnt++;
-                        }
                         int numTrackLength = Settings.Instance.GetInt32("NUM_tracklength");
                         // maintain route history length
                         if (route.Points.Count > numTrackLength)
                         {
-                            //  trackPoints.RemoveRange(0, trackPoints.Count - int.Parse(Settings.Instance["NUM_tracklength"].ToString()));
                             route.Points.RemoveRange(0,
                                 route.Points.Count - numTrackLength);
                         }
                         // add new route point
-                        if (MainV2.comPort.MAV.cs.lat != 0)
+                        if (MainV2.comPort.MAV.cs.lat != 0 && MainV2.comPort.MAV.cs.lng != 0)
                         {
-                            // trackPoints.Add(currentloc);
                             route.Points.Add(currentloc);
                         }
-
-
-                        while (gMapControl1.inOnPaint)
-                        {
-                            Thread.Sleep(1);
-                            cnt++;
-                        }
-
-                        //route = new GMapRoute(route.Points, "track");
-                        //track.Stroke = Pens.Red;
-                        //route.Stroke = new Pen(Color.FromArgb(144, Color.Red));
-                        //route.Stroke.Width = 5;
-                        //route.Tag = "track";
-
-                        //updateClearRoutes();
 
                         gMapControl1.UpdateRouteLocalPosition(route);
 
@@ -1209,86 +1220,12 @@ namespace MissionPlanner.GCSViews
                             waypoints = DateTime.Now;
                         }
 
-                        //routes.Polygons.Add(poly);  
-
-                        if (route.Points.Count > 0)
-                        {
-                            // add primary route icon
-                            updateClearRouteMarker(currentloc);
-
-                            // draw guide mode point for only main mav
-                            if (MainV2.comPort.MAV.cs.mode.ToLower() == "guided" && MainV2.comPort.MAV.GuidedMode.x != 0)
-                            {
-                                addpolygonmarker("Guided Mode", MainV2.comPort.MAV.GuidedMode.y,
-                                    MainV2.comPort.MAV.GuidedMode.x, (int) MainV2.comPort.MAV.GuidedMode.z, Color.Blue,
-                                    routes);
-                            }
-
-                            // draw all icons for all connected mavs
-                            foreach (var port in MainV2.Comports)
-                            {
-                                // draw the mavs seen on this port
-                                foreach (var MAV in port.MAVlist.GetMAVStates())
-                                {
-                                    PointLatLng portlocation = new PointLatLng(MAV.cs.lat, MAV.cs.lng);
-
-                                    if (MAV.cs.firmware == MainV2.Firmwares.ArduPlane ||
-                                        MAV.cs.firmware == MainV2.Firmwares.Ateryx)
-                                    {
-                                        routes.Markers.Add(new GMapMarkerPlane(portlocation, MAV.cs.yaw,
-                                            MAV.cs.groundcourse, MAV.cs.nav_bearing, MAV.cs.target_bearing, MAV.cs.radius)
-                                        {
-                                            ToolTipText = MAV.cs.alt.ToString("0"),
-                                            ToolTipMode = MarkerTooltipMode.Always
-                                        });
-                                    }
-                                    else if (MAV.cs.firmware == MainV2.Firmwares.ArduRover)
-                                    {
-                                        routes.Markers.Add(new GMapMarkerRover(portlocation, MAV.cs.yaw,
-                                            MAV.cs.groundcourse, MAV.cs.nav_bearing, MAV.cs.target_bearing));
-                                    }
-                                    else if (MAV.aptype == MAVLink.MAV_TYPE.HELICOPTER)
-                                    {
-                                        routes.Markers.Add(new GMapMarkerHeli(portlocation, MAV.cs.yaw,
-                                            MAV.cs.groundcourse, MAV.cs.nav_bearing));
-                                    }
-                                    else if (MAV.cs.firmware == MainV2.Firmwares.ArduTracker)
-                                    {
-                                        routes.Markers.Add(new GMapMarkerAntennaTracker(portlocation, MAV.cs.yaw,
-                                            MAV.cs.target_bearing));
-                                    }
-                                    else if (MAV.cs.firmware == MainV2.Firmwares.ArduCopter2)
-                                    {
-                                        routes.Markers.Add(new GMapMarkerQuad(portlocation, MAV.cs.yaw,
-                                            MAV.cs.groundcourse, MAV.cs.nav_bearing, MAV.sysid));
-                                    }
-                                    else
-                                    {
-                                        // unknown type
-                                        routes.Markers.Add(new GMarkerGoogle(portlocation, GMarkerGoogleType.green_dot));
-                                    }
-                                }
-                            }
-
-                            if (route.Points[route.Points.Count - 1].Lat != 0 &&
-                                (mapupdate.AddSeconds(3) < DateTime.Now) && CHK_autopan.Checked)
-                            {
-                                updateMapPosition(currentloc);
-                                mapupdate = DateTime.Now;
-                            }
-
-                            if (route.Points.Count == 1 && gMapControl1.Zoom == 3) // 3 is the default load zoom
-                            {
-                                updateMapPosition(currentloc);
-                                updateMapZoom(17);
-                                //gMapControl1.ZoomAndCenterMarkers("routes");// ZoomAndCenterRoutes("routes");
-                            }
-                        }
+                        updateClearRoutesMarkers();
 
                         // add this after the mav icons are drawn
                         if (MainV2.comPort.MAV.cs.MovingBase != null)
                         {
-                            routes.Markers.Add(new GMarkerGoogle(currentloc, GMarkerGoogleType.blue_dot)
+                            addMissionRouteMarker(new GMarkerGoogle(currentloc, GMarkerGoogleType.blue_dot)
                             {
                                 Position = MainV2.comPort.MAV.cs.MovingBase,
                                 ToolTipText = "Moving Base",
@@ -1296,7 +1233,7 @@ namespace MissionPlanner.GCSViews
                             });
                         }
 
-                        // for testing
+                        // add gimbal point center
                         try
                         {
                             if (MainV2.comPort.MAV.param.ContainsKey("MNT_STAB_TILT"))
@@ -1318,13 +1255,66 @@ namespace MissionPlanner.GCSViews
                                     {
                                         MainV2.comPort.MAV.cs.GimbalPoint = marker;
 
-                                        routes.Markers.Add(new GMarkerGoogle(marker, GMarkerGoogleType.blue_dot)
+                                        addMissionRouteMarker(new GMarkerGoogle(marker, GMarkerGoogleType.blue_dot)
                                         {
                                             ToolTipText = "Camera Target\n" + marker,
                                             ToolTipMode = MarkerTooltipMode.OnMouseOver
                                         });
                                     }
                                 }
+                            }
+
+                            
+                            // cleanup old - no markers where added, so remove all old 
+                            if (MainV2.comPort.MAV.camerapoints.Count == 0)
+                                photosoverlay.Markers.Clear();
+
+                            var min_interval = 0.0;
+                            if (MainV2.comPort.MAV.param.ContainsKey("CAM_MIN_INTERVAL"))
+                                min_interval = MainV2.comPort.MAV.param["CAM_MIN_INTERVAL"].Value/1000.0;
+
+                            // set fov's based on last grid calc
+                            if (Settings.Instance["camera_fovh"] != null)
+                            {
+                                GMapMarkerPhoto.hfov = Settings.Instance.GetDouble("camera_fovh");
+                                GMapMarkerPhoto.vfov = Settings.Instance.GetDouble("camera_fovv");
+                            }
+
+                            // add new - populate camera_feedback to map
+                            double oldtime = double.MinValue;
+                            foreach (var mark in MainV2.comPort.MAV.camerapoints.ToArray())
+                            {
+                                var timesincelastshot = (mark.time_usec/1000.0)/1000.0 - oldtime;
+                                MainV2.comPort.MAV.cs.timesincelastshot = timesincelastshot;
+                                bool contains = photosoverlay.Markers.Any(p => p.Tag.Equals(mark.time_usec));
+                                if (!contains)
+                                {
+                                    if (timesincelastshot < min_interval)
+                                        addMissionPhotoMarker(new GMapMarkerPhoto(mark, true));
+                                    else
+                                        addMissionPhotoMarker(new GMapMarkerPhoto(mark, false));
+                                }
+                                oldtime = (mark.time_usec/1000.0)/1000.0;
+                            }
+                            
+                            // age current
+                            int camcount = MainV2.comPort.MAV.camerapoints.Count;
+                            int a = 0;
+                            foreach (var mark in photosoverlay.Markers)
+                            {
+                                if (mark is GMapMarkerPhoto)
+                                {
+                                    MainV2.comPort.MAV.GMapMarkerOverlapCount.Add(((GMapMarkerPhoto)mark).footprintpoly);
+                                    if (a < (camcount-4))
+                                        ((GMapMarkerPhoto)mark).drawfootprint = false;
+                                }
+                                a++;
+                            }
+
+                            if (!kmlpolygons.Markers.Contains(MainV2.comPort.MAV.GMapMarkerOverlapCount) && camcount > 0)
+                            {
+                                kmlpolygons.Markers.Clear();
+                                kmlpolygons.Markers.Add(MainV2.comPort.MAV.GMapMarkerOverlapCount);
                             }
                         }
                         catch
@@ -1333,6 +1323,7 @@ namespace MissionPlanner.GCSViews
 
                         lock (MainV2.instance.adsblock)
                         {
+                            // cleanup old
                             for (int a = (routes.Markers.Count - 1); a >= 0; a--)
                             {
                                 if (routes.Markers[a].ToolTipText != null &&
@@ -1344,17 +1335,89 @@ namespace MissionPlanner.GCSViews
 
                             foreach (adsb.PointLatLngAltHdg plla in MainV2.instance.adsbPlanes.Values)
                             {
-                                // 30 seconds
+                                // 30 seconds history
                                 if (((DateTime) MainV2.instance.adsbPlaneAge[plla.Tag]) > DateTime.Now.AddSeconds(-30))
-                                    routes.Markers.Add(new GMapMarkerADSBPlane(plla, plla.Heading)
+                                {
+                                    addMissionRouteMarker(new GMapMarkerADSBPlane(plla, plla.Heading)
                                     {
                                         ToolTipText = "ICAO: " + plla.Tag + " " + plla.Alt.ToString("0"),
                                         ToolTipMode = MarkerTooltipMode.OnMouseOver
                                     });
+                                }
                             }
                         }
 
-                        // routes.Markers.Clear();
+
+                        if (route.Points.Count > 0)
+                        {
+                            // add primary route icon
+
+                            // draw guide mode point for only main mav
+                            if (MainV2.comPort.MAV.cs.mode.ToLower() == "guided" && MainV2.comPort.MAV.GuidedMode.x != 0)
+                            {
+                                addpolygonmarker("Guided Mode", MainV2.comPort.MAV.GuidedMode.y,
+                                    MainV2.comPort.MAV.GuidedMode.x, (int)MainV2.comPort.MAV.GuidedMode.z, Color.Blue,
+                                    routes);
+                            }
+
+                            // draw all icons for all connected mavs
+                            foreach (var port in MainV2.Comports)
+                            {
+                                // draw the mavs seen on this port
+                                foreach (var MAV in port.MAVlist.GetMAVStates())
+                                {
+                                    PointLatLng portlocation = new PointLatLng(MAV.cs.lat, MAV.cs.lng);
+
+                                    if (MAV.aptype == MAVLink.MAV_TYPE.FIXED_WING)
+                                    {
+                                        addMissionRouteMarker(new GMapMarkerPlane(portlocation, MAV.cs.yaw,
+                                            MAV.cs.groundcourse, MAV.cs.nav_bearing, MAV.cs.target_bearing, MAV.cs.radius)
+                                        {
+                                            ToolTipText = MAV.cs.alt.ToString("0"),
+                                            ToolTipMode = MarkerTooltipMode.Always
+                                        });
+                                    }
+                                    else if (MAV.aptype == MAVLink.MAV_TYPE.GROUND_ROVER)
+                                    {
+                                        addMissionRouteMarker(new GMapMarkerRover(portlocation, MAV.cs.yaw,
+                                            MAV.cs.groundcourse, MAV.cs.nav_bearing, MAV.cs.target_bearing));
+                                    }
+                                    else if (MAV.aptype == MAVLink.MAV_TYPE.HELICOPTER)
+                                    {
+                                        addMissionRouteMarker(new GMapMarkerHeli(portlocation, MAV.cs.yaw,
+                                            MAV.cs.groundcourse, MAV.cs.nav_bearing));
+                                    }
+                                    else if (MAV.cs.firmware == MainV2.Firmwares.ArduTracker)
+                                    {
+                                        addMissionRouteMarker(new GMapMarkerAntennaTracker(portlocation, MAV.cs.yaw,
+                                            MAV.cs.target_bearing));
+                                    }
+                                    else if (MAV.cs.firmware == MainV2.Firmwares.ArduCopter2 || MAV.aptype == MAVLink.MAV_TYPE.QUADROTOR)
+                                    {
+                                        addMissionRouteMarker(new GMapMarkerQuad(portlocation, MAV.cs.yaw,
+                                            MAV.cs.groundcourse, MAV.cs.nav_bearing, MAV.sysid));
+                                    }
+                                    else
+                                    {
+                                        // unknown type
+                                        addMissionRouteMarker(new GMarkerGoogle(portlocation, GMarkerGoogleType.green_dot));
+                                    }
+                                }
+                            }
+
+                            if (route.Points[route.Points.Count - 1].Lat != 0 &&
+                                (mapupdate.AddSeconds(3) < DateTime.Now) && CHK_autopan.Checked)
+                            {
+                                updateMapPosition(currentloc);
+                                mapupdate = DateTime.Now;
+                            }
+
+                            if (route.Points.Count == 1 && gMapControl1.Zoom == 3) // 3 is the default load zoom
+                            {
+                                updateMapPosition(currentloc);
+                                updateMapZoom(17);
+                            }
+                        }
 
                         gMapControl1.HoldInvalidation = false;
 
@@ -1369,6 +1432,7 @@ namespace MissionPlanner.GCSViews
                 catch (Exception ex)
                 {
                     log.Error(ex);
+                    Tracking.AddException(ex);
                     Console.WriteLine("FD Main loop exception " + ex);
                 }
             }
@@ -1401,12 +1465,11 @@ namespace MissionPlanner.GCSViews
             throw new Exception("Bad Type");
         }
 
-        private void updateClearRouteMarker(PointLatLng currentloc)
+        private void updateClearRoutesMarkers()
         {
             Invoke((MethodInvoker) delegate
             {
                 routes.Markers.Clear();
-                //routes.Markers.Add(new GMarkerGoogle(currentloc, GMarkerGoogleType.none));
             });
         }
 
@@ -1439,6 +1502,23 @@ namespace MissionPlanner.GCSViews
             });
         }
 
+        private void addMissionRouteMarker(GMapMarker marker)
+        {
+            // not async
+            Invoke((MethodInvoker)delegate
+            {
+                routes.Markers.Add(marker);
+            });
+        }
+
+        private void addMissionPhotoMarker(GMapMarker marker)
+        {
+            // not async
+            Invoke((MethodInvoker)delegate
+            {
+                photosoverlay.Markers.Add(marker);
+            });
+        }
 
         private void updatePlayPauseButton(bool playing)
         {
@@ -1549,7 +1629,7 @@ namespace MissionPlanner.GCSViews
 
         private void updateMapPosition(PointLatLng currentloc)
         {
-            BeginInvoke((MethodInvoker) delegate
+            Invoke((MethodInvoker) delegate
             {
                 try
                 {
@@ -1568,7 +1648,7 @@ namespace MissionPlanner.GCSViews
 
         private void updateMapZoom(int zoom)
         {
-            BeginInvoke((MethodInvoker) delegate
+            Invoke((MethodInvoker) delegate
             {
                 try
                 {
@@ -1595,6 +1675,9 @@ namespace MissionPlanner.GCSViews
                         lbl_logpercent.Text =
                             (MainV2.comPort.logplaybackfile.BaseStream.Position/
                              (double) MainV2.comPort.logplaybackfile.BaseStream.Length).ToString("0.00%");
+
+                    if (lbl_playbackspeed.Visible)
+                        lbl_playbackspeed.Text = "x " + LogPlayBackSpeed;
                 }
                 catch
                 {
@@ -1629,8 +1712,11 @@ namespace MissionPlanner.GCSViews
                     }
                 }
 
-                overlay.Markers.Add(m);
-                overlay.Markers.Add(mBorders);
+                Invoke((MethodInvoker) delegate
+                {
+                    overlay.Markers.Add(m);
+                    overlay.Markers.Add(mBorders);
+                });
             }
             catch (Exception)
             {
@@ -1652,8 +1738,11 @@ namespace MissionPlanner.GCSViews
                     mBorders.InnerMarker = m;
                 }
 
-                overlay.Markers.Add(m);
-                overlay.Markers.Add(mBorders);
+                Invoke((MethodInvoker) delegate
+                {
+                    overlay.Markers.Add(m);
+                    overlay.Markers.Add(mBorders);
+                });
             }
             catch (Exception)
             {
@@ -1701,8 +1790,11 @@ namespace MissionPlanner.GCSViews
                 wppath.Points.Add(polygonPoints[a]);
             }
 
-            polygons.Routes.Add(homeroute);
-            polygons.Routes.Add(wppath);
+            Invoke((MethodInvoker) delegate
+            {
+                polygons.Routes.Add(homeroute);
+                polygons.Routes.Add(wppath);
+            });
         }
 
         GMapOverlay polygons;
@@ -2037,9 +2129,15 @@ namespace MissionPlanner.GCSViews
                      && (float) MainV2.comPort.MAV.param["ARSPD_USE"] == 0)
             {
                 modifyandSetSpeed.Value = (decimal) (float) MainV2.comPort.MAV.param["TRIM_THROTTLE"];
-                    // percent
+                // percent
                 modifyandSetSpeed.ButtonText = Strings.ChangeThrottle;
             }
+
+            if (MainV2.comPort.MAV.param.ContainsKey("LOITER_RAD"))
+                modifyandSetLoiterRad.Value = (decimal)((float)MainV2.comPort.MAV.param["LOITER_RAD"] * CurrentState.multiplierdist);
+
+            if (MainV2.comPort.MAV.param.ContainsKey("WP_LOITER_RAD"))
+                modifyandSetLoiterRad.Value = (decimal)((float)MainV2.comPort.MAV.param["WP_LOITER_RAD"] * CurrentState.multiplierdist);
         }
 
         void cam_camimage(Image camimage)
@@ -2083,7 +2181,7 @@ namespace MissionPlanner.GCSViews
             using (OpenFileDialog fd = new OpenFileDialog())
             {
                 fd.AddExtension = true;
-                fd.Filter = "Ardupilot Telemtry log (*.tlog)|*.tlog|Mavlink Log (*.mavlog)|*.mavlog";
+                fd.Filter = "Telemetry log (*.tlog)|*.tlog;*.tlog.*|Mavlink Log (*.mavlog)|*.mavlog";
                 fd.InitialDirectory = Settings.Instance.LogDir;
                 fd.DefaultExt = ".tlog";
                 DialogResult result = fd.ShowDialog();
@@ -2516,7 +2614,7 @@ namespace MissionPlanner.GCSViews
             {
                 Name = "select",
                 Width = 50,
-                Height = 350,
+                Height = 550,
                 Text = "Graph This"
             };
 
@@ -2651,8 +2749,8 @@ namespace MissionPlanner.GCSViews
             Form selectform = new Form
             {
                 Name = "select",
-                Width = 800,
-                Height = 410,
+                Width = 50,
+                Height = 50,
                 Text = "Display This",
                 AutoSize = true,
                 StartPosition = FormStartPosition.CenterParent,
@@ -2954,12 +3052,14 @@ namespace MissionPlanner.GCSViews
                 return;
             }
 
-            string alt = (100*CurrentState.multiplierdist).ToString("0");
-            if (DialogResult.Cancel == InputBox.Show("Enter Alt", "Enter Target Alt (absolute)", ref alt))
+            double srtmalt = srtm.getAltitude(MouseDownStart.Lat, MouseDownStart.Lng).alt;
+
+            string alt = (srtmalt *CurrentState.multiplierdist).ToString("0");
+            if (DialogResult.Cancel == InputBox.Show("Enter Alt", "Enter Target Alt (absolute, default value is ground alt)", ref alt))
                 return;
 
-            int intalt = (int) (100*CurrentState.multiplierdist);
-            if (!int.TryParse(alt, out intalt))
+            float intalt = 0;
+            if (!float.TryParse(alt, out intalt))
             {
                 CustomMessageBox.Show("Bad Alt");
                 return;
@@ -2970,9 +3070,6 @@ namespace MissionPlanner.GCSViews
                 CustomMessageBox.Show("Bad Lat/Long");
                 return;
             }
-
-            //MainV2.comPort.setMountConfigure(MAVLink.MAV_MOUNT_MODE.GPS_POINT, true, true, true);
-            //MainV2.comPort.setMountControl(MouseDownStart.Lat, MouseDownStart.Lng, (int)(intalt / CurrentState.multiplierdist), true);
 
             MainV2.comPort.doCommand(MAVLink.MAV_CMD.DO_SET_ROI, 0, 0, 0, 0, (float) MouseDownStart.Lat,
                 (float) MouseDownStart.Lng, intalt/CurrentState.multiplierdist);
@@ -3027,8 +3124,8 @@ namespace MissionPlanner.GCSViews
             Form selectform = new Form
             {
                 Name = "select",
-                Width = 800,
-                Height = 410,
+                Width = 50,
+                Height = 50,
                 Text = "Display This",
                 AutoSize = true,
                 StartPosition = FormStartPosition.CenterParent,
@@ -3631,11 +3728,17 @@ namespace MissionPlanner.GCSViews
         {
             if (messagecount != MainV2.comPort.MAV.cs.messages.Count)
             {
-                StringBuilder message = new StringBuilder();
-                MainV2.comPort.MAV.cs.messages.ForEach(x => { message.Insert(0, x + "\r\n"); });
-                txt_messagebox.Text = message.ToString();
+                try
+                {
+                    StringBuilder message = new StringBuilder();
+                    MainV2.comPort.MAV.cs.messages.ForEach(x => { message.Insert(0, x + "\r\n"); });
+                    txt_messagebox.Text = message.ToString();
 
-                messagecount = MainV2.comPort.MAV.cs.messages.Count;
+                    messagecount = MainV2.comPort.MAV.cs.messages.Count;
+                }
+                catch
+                {
+                }
             }
         }
 
@@ -4068,6 +4171,55 @@ namespace MissionPlanner.GCSViews
             }
 
             Settings.Instance["tabcontrolactions"] = answer;
+        }
+
+        private void loadFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            POI.POILoad();
+        }
+
+        private void PointCameraCoordsToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            var location = "";
+            InputBox.Show("Enter Coords", "Please enter the coords 'lat;long;alt' or 'lat;long'", ref location);
+
+            var split = location.Split(';');
+
+            if (split.Length == 3)
+            {
+                var lat = float.Parse(split[0], CultureInfo.InvariantCulture);
+                var lng = float.Parse(split[1], CultureInfo.InvariantCulture);
+                var alt = float.Parse(split[2], CultureInfo.InvariantCulture);
+
+                MainV2.comPort.doCommand(MAVLink.MAV_CMD.DO_SET_ROI, 0, 0, 0, 0, lat, lng,
+                    alt/CurrentState.multiplierdist);
+            } 
+            else if (split.Length == 2)
+            {
+                var lat = float.Parse(split[0], CultureInfo.InvariantCulture);
+                var lng = float.Parse(split[1], CultureInfo.InvariantCulture);
+                var alt = srtm.getAltitude(MouseDownStart.Lat, MouseDownStart.Lng).alt;
+
+                MainV2.comPort.doCommand(MAVLink.MAV_CMD.DO_SET_ROI, 0, 0, 0, 0, lat, lng, (float) alt);
+            }
+            else
+            {
+                CustomMessageBox.Show(Strings.InvalidField, Strings.ERROR);
+            }
+        }
+
+        private void modifyandSetLoiterRad_Click(object sender, EventArgs e)
+        {
+            int newrad = (int)modifyandSetLoiterRad.Value;
+            
+            try
+            {
+                MainV2.comPort.setParam(new[] { "LOITER_RAD", "WP_LOITER_RAD" },newrad / CurrentState.multiplierdist);
+            }
+            catch
+            {
+                CustomMessageBox.Show(Strings.ErrorCommunicating, Strings.ERROR);
+            }
         }
     }
 }

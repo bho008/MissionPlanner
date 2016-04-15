@@ -133,6 +133,9 @@ namespace GMap.NET.WindowsForms
             {
                GPoint p2 = LocalPoints[i];
 
+                if (Math.Abs(p2.X) > 99000 || Math.Abs(p2.Y) > 99000)
+                    Stroke.DashStyle = DashStyle.Solid;
+
                if(i == 0)
                {
                   graphicsPath.AddLine(p2.X, p2.Y, p2.X, p2.Y);
@@ -159,12 +162,11 @@ namespace GMap.NET.WindowsForms
                 if (Stroke.DashStyle == DashStyle.Custom)
                 {
                     customarrows = true;
-                    Stroke.DashStyle = DashStyle.Solid;
                 }
 
                g.DrawPath(Stroke, graphicsPath);
 
-               if (Stroke.DashStyle == DashStyle.Custom)
+               if (customarrows)
                {
                    if (graphicsPath.PointCount > 0)
                    {
@@ -186,7 +188,7 @@ namespace GMap.NET.WindowsForms
                            // distance
                            double r = Math.Sqrt(Math.Pow(polx, 2) + Math.Pow(poly, 2));
 
-                           if (r == 0)
+                           if (r <= 20)
                                continue;
 
                            // angle

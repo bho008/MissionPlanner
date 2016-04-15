@@ -6,9 +6,11 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 using BrightIdeasSoftware;
 using log4net;
+using MissionPlanner.Controls;
 using MissionPlanner.Utilities;
 
 namespace MissionPlanner.Log
@@ -17,6 +19,8 @@ namespace MissionPlanner.Log
     {
         private static readonly ILog log =
             LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        const int MaxPlaybackLogSize = 100000;
+
 
         public LogIndex()
         {
@@ -27,103 +31,160 @@ namespace MissionPlanner.Log
 
         private void LogIndex_Load(object sender, EventArgs e)
         {
-            //processbg(Settings.Instance.LogDir);
-            System.Threading.ThreadPool.QueueUserWorkItem(processbg, Settings.Instance.LogDir);
+            createFileList(Settings.Instance.LogDir);
+
+            System.Threading.ThreadPool.QueueUserWorkItem(queueRunner);
+            System.Threading.ThreadPool.QueueUserWorkItem(queueRunner);
+            System.Threading.ThreadPool.QueueUserWorkItem(queueRunner);
+            System.Threading.ThreadPool.QueueUserWorkItem(queueRunner);
+            System.Threading.ThreadPool.QueueUserWorkItem(queueRunner);
+            System.Threading.ThreadPool.QueueUserWorkItem(queueRunner);
+            System.Threading.ThreadPool.QueueUserWorkItem(queueRunner);
+            System.Threading.ThreadPool.QueueUserWorkItem(queueRunner);
         }
 
-        void processbg(object directory)
+        List<string> files = new List<string>();
+
+        void createFileList(object directory)
         {
-            //this.Invoke((MethodInvoker)delegate { objectListView1.Clear(); });            
+            Loading.ShowLoading("Scanning for files", this);
 
             string[] files1 = Directory.GetFiles(directory.ToString(), "*.tlog", SearchOption.AllDirectories);
             string[] files2 = Directory.GetFiles(directory.ToString(), "*.bin", SearchOption.AllDirectories);
             string[] files3 = Directory.GetFiles(directory.ToString(), "*.log", SearchOption.AllDirectories);
 
-            List<string> files = new List<string>();
+            files.Clear();
 
             files.AddRange(files1);
             files.AddRange(files2);
             files.AddRange(files3);
+        }
 
-            //objectListView1.VirtualListSize = files.Length;
+        List<Thread> threads = new List<Thread>();
 
-            List<object> logs = new List<object>();
+        void queueRunner(object nothing)
+        {
+            lock (threads)
+                threads.Add(Thread.CurrentThread);
 
-            foreach (var file in files)
+            while (true)
             {
-                if (!File.Exists(file + ".jpg"))
+                string file = "";
+                lock (files)
                 {
-                    LogMap.MapLogs(new string[] {file});
-                }
+                    if (IsDisposed)
+                        return;
 
-                var loginfo = new loginfo();
-
-                loginfo.fullname = file;
-
-                if (File.Exists(file + ".jpg"))
-                {
-                    loginfo.img = new Bitmap(file + ".jpg");
-                }
-
-                if (file.ToLower().EndsWith(".tlog"))
-                {
-                    using (MAVLinkInterface mine = new MAVLinkInterface())
+                    if (files.Count == 0)
                     {
-                        try
-                        {
-                            mine.logplaybackfile =
-                                new BinaryReader(File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read));
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Debug(ex.ToString());
-                            CustomMessageBox.Show("Log Can not be opened. Are you still connected?");
-                            return;
-                        }
-                        mine.logreadmode = true;
+                        break;
+                    }
 
-                        mine.MAV.packets.Initialize(); // clear
+                    Loading.ShowLoading("Files loading left " + files.Count, this);
 
-                        mine.getHeartBeat();
+                    file = files[0];
+                    files.RemoveAt(0);
+                }
 
-                        loginfo.Date = mine.lastlogread;
-                        loginfo.Aircraft = mine.sysidcurrent;
+                if (File.Exists(file))
+                    processbg(file);
+            }
 
-                        var start = mine.lastlogread;
+            if (threads[0] != Thread.CurrentThread)
+                return;
 
-                        try
+            while (threads.Count > 1)
+            {
+                threads[1].Join();
+                threads.RemoveAt(1);
+            }
+
+            Loading.ShowLoading("Populating Data", this);
+            
+            objectListView1.AddObjects(logs);
+
+            Loading.Close();
+        }
+
+        List<object> logs = new List<object>();
+
+        void processbg(string file)
+        {
+            if (!File.Exists(file + ".jpg"))
+            {
+                LogMap.MapLogs(new string[] {file});
+            }
+
+            var loginfo = new loginfo();
+
+            loginfo.fullname = file;
+
+            loginfo.Size = new FileInfo(file).Length;
+
+            if (File.Exists(file + ".jpg"))
+            {
+                loginfo.img = new Bitmap(file + ".jpg");
+            }
+
+            if (file.ToLower().EndsWith(".tlog"))
+            {
+                using (MAVLinkInterface mine = new MAVLinkInterface())
+                {
+                    try
+                    {
+                        mine.logplaybackfile =
+                            new BinaryReader(File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read));
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Debug(ex.ToString());
+                        CustomMessageBox.Show("Log Can not be opened. Are you still connected?");
+                        return;
+                    }
+                    mine.logreadmode = true;
+
+                    mine.MAV.packets.Initialize(); // clear
+
+                    mine.getHeartBeat();
+
+                    loginfo.Date = mine.lastlogread;
+                    loginfo.Aircraft = mine.sysidcurrent;
+
+                    var start = mine.lastlogread;
+
+                    try
+                    {
+                        if (mine.logplaybackfile.BaseStream.Length > MaxPlaybackLogSize)
                         {
                             mine.logplaybackfile.BaseStream.Seek(-100000, SeekOrigin.End);
                         }
-                        catch
+                        else
                         {
+                            mine.logplaybackfile.BaseStream.Seek(0, SeekOrigin.Begin);
                         }
-
-                        var end = mine.lastlogread;
-
-                        while (mine.logplaybackfile.BaseStream.Position < mine.logplaybackfile.BaseStream.Length)
-                        {
-                            mine.readPacket();
-
-                            if (mine.lastlogread > end)
-                                end = mine.lastlogread;
-                        }
-
-                        loginfo.Duration = (end - start).ToString();
                     }
+                    catch
+                    {
+                    }
+
+                    var end = mine.lastlogread;
+
+                    while (mine.logplaybackfile.BaseStream.Position < mine.logplaybackfile.BaseStream.Length)
+                    {
+                        mine.readPacket();
+
+                        if (mine.lastlogread > end)
+                            end = mine.lastlogread;
+                    }
+
+                    loginfo.Duration = (end - start).ToString();
                 }
-
-                objectListView1.AddObject(loginfo);
-
-                logs.Add(loginfo);
             }
-            /*
-            this.Invoke((MethodInvoker)delegate
-            {
-                objectListView1.AddObjects(logs);
-            });
-             */
+
+            logs.Add(loginfo);
         }
+
+        static object locker = new object();
 
         public class loginfo
         {
@@ -143,6 +204,7 @@ namespace MissionPlanner.Log
             public string Duration { get; set; }
             public DateTime Date { get; set; }
             public int Aircraft { get; set; }
+            public long Size { get; set; }
 
             public loginfo()
             {

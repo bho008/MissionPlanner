@@ -25,7 +25,40 @@ namespace MissionPlanner
     public class MAVLinkInterface : MAVLink, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        public ICommsSerial BaseStream { get; set; }
+        private ICommsSerial _baseStream;
+        private bool pauseStreams;
+
+        public ICommsSerial BaseStream
+        {
+            get { return _baseStream; }
+            set
+            {
+                // This is called every time user changes the port selection, so we need to make sure we cleanup
+                // any previous objects so we don't leave the cleanup of system resources to the garbage collector.
+                if (_baseStream != null)
+                {
+                    try
+                    {
+                        if (_baseStream.IsOpen)
+                        {
+                            _baseStream.Close();
+                        }
+                    }
+                    catch { }
+                    IDisposable dsp = _baseStream as IDisposable;
+                    if (dsp != null)
+                    {
+                        try
+                        {
+                            dsp.Dispose();
+                        }
+                        catch { }
+                    }
+                }
+                _baseStream = value;
+            }
+        }
+
 
         public ICommsSerial MirrorStream { get; set; }
         public bool MirrorStreamWrite { get; set; }
@@ -161,10 +194,21 @@ namespace MissionPlanner
         /// <summary>
         /// enabled read from file mode
         /// </summary>
-        public bool logreadmode { get; set; }
+        public bool logreadmode {
+            get { return _logreadmode; }
+            set { _logreadmode = value; }
+        }
+
+        bool _logreadmode = false;
+
+        BinaryReader _logplaybackfile;
 
         public DateTime lastlogread { get; set; }
-        public BinaryReader logplaybackfile { get; set; }
+        public BinaryReader logplaybackfile
+        {
+            get { return _logplaybackfile; }
+            set { _logplaybackfile = value; MAVlist.Clear(); }
+        }
         public BufferedStream logfile { get; set; }
         public BufferedStream rawlogfile { get; set; }
 
@@ -1362,8 +1406,8 @@ Please check the following
 
             mavlink_command_long_t req = new mavlink_command_long_t();
 
-            req.target_system = MAV.sysid;
-            req.target_component = MAV.compid;
+                req.target_system = MAV.sysid;
+                req.target_component = MAV.compid;
 
             req.command = (ushort) actionid;
 
@@ -2896,13 +2940,11 @@ Please check the following
                 return buffer; // new byte[0];
             }
 
-            // 3dr radios dont send a hb, so no mavstate is ever created, this overrides that behavior
-            if (sysid == 51 && compid == 68 && !MAVlist.Contains(51,68))
+            // create a state for any sysid/compid
+            if (!MAVlist.Contains(sysid, compid))
             {
-                // create an item
-                MAVlist[sysid, compid] = MAVlist[sysid, compid];
-                MAVlist[sysid, compid].sysid = sysid;
-                MAVlist[sysid, compid].compid = compid;
+                // create an item - hidden
+                MAVlist.AddHiddenList(sysid, compid);
             }
 
             try
@@ -2933,8 +2975,8 @@ Please check the following
                             MAVlist[sysid, compid].packetslost += numLost;
                             WhenPacketLost.OnNext(numLost);
 
-                            log.InfoFormat("mav {2} seqno {0} exp {3} pkts lost {1}", packetSeqNo, numLost, sysid,
-                                expectedPacketSeqNo);
+                            log.InfoFormat("mav {2}-{4} seqno {0} exp {3} pkts lost {1}", packetSeqNo, numLost, sysid,
+                                expectedPacketSeqNo,compid);
                         }
 
                         MAVlist[sysid, compid].packetsnotlost++;
@@ -2979,7 +3021,7 @@ Please check the following
                         {
                             var adsb = buffer.ByteArrayToStructure<MAVLink.mavlink_adsb_vehicle_t>(6);
 
-                            MainV2.instance.adsbPlanes[adsb.ICAO_address.ToString("X5")] = new MissionPlanner.Utilities.adsb.PointLatLngAltHdg(adsb.lat / 1e7, adsb.lon / 1e7, adsb.altitude / 1000, adsb.heading, adsb.ICAO_address.ToString("X5"));
+                            MainV2.instance.adsbPlanes[adsb.ICAO_address.ToString("X5")] = new MissionPlanner.Utilities.adsb.PointLatLngAltHdg(adsb.lat / 1e7, adsb.lon / 1e7, adsb.altitude / 1000, adsb.heading * 0.01f, adsb.ICAO_address.ToString("X5"));
                             MainV2.instance.adsbPlaneAge[adsb.ICAO_address.ToString("X5")] = DateTime.Now;
                         }
                     }
@@ -2993,7 +3035,7 @@ Please check the following
                         if (hb.type != (byte) MAV_TYPE.GCS)
                         {
                             // add a seen sysid
-                            if (!MAVlist.Contains(sysid, compid))
+                            if (!MAVlist.Contains(sysid, compid, false))
                             {
                                 // ensure its set from connect or log playback
                                 MAVlist.Create(sysid, compid);
@@ -3062,7 +3104,7 @@ Please check the following
                                 Settings.Instance["speechenable"] != null &&
                                 Settings.Instance["speechenable"].ToString() == "True")
                             {
-                                MainV2.speechEngine.SpeakAsync(logdata);
+                                 MainV2.speechEngine.SpeakAsync(logdata);
                             }
                         }
                     }
@@ -3259,6 +3301,16 @@ Please check the following
 
                 Console.WriteLine("RP # {0} {1} {2} {3} {4}", rallypt.idx, rallypt.lat, rallypt.lng, rallypt.alt,
                     rallypt.break_alt);
+            }
+
+            if (buffer[5] == (byte)MAVLINK_MSG_ID.CAMERA_FEEDBACK)
+            {
+                mavlink_camera_feedback_t camerapt = buffer.ByteArrayToStructure<mavlink_camera_feedback_t>(6);
+
+                if (MAVlist[sysid, compid].camerapoints.Count == 0 || MAVlist[sysid, compid].camerapoints.Last().time_usec != camerapt.time_usec)
+                {
+                    MAVlist[sysid, compid].camerapoints.Add(camerapt);
+                }
             }
 
             if (buffer[5] == (byte) MAVLINK_MSG_ID.FENCE_POINT)

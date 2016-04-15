@@ -15,6 +15,7 @@ using IronPython.Hosting;
 using log4net;
 using MissionPlanner.Controls;
 using MissionPlanner.Comms;
+using MissionPlanner.Log;
 using Transitions;
 using MissionPlanner.Warnings;
 
@@ -410,6 +411,8 @@ namespace MissionPlanner
         {
             log.Info("Mainv2 ctor");
 
+            SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
+
             // set this before we reset it
             Settings.Instance["NUM_tracklength"] = "200";
 
@@ -456,7 +459,6 @@ namespace MissionPlanner
             _connectionControl.CMB_baudrate.TextChanged += this.CMB_baudrate_TextChanged;
             _connectionControl.CMB_serialport.SelectedIndexChanged += this.CMB_serialport_SelectedIndexChanged;
             _connectionControl.CMB_serialport.Click += this.CMB_serialport_Click;
-            _connectionControl.TOOL_APMFirmware.SelectedIndexChanged += this.TOOL_APMFirmware_SelectedIndexChanged;
 
             _connectionControl.ShowLinkStats += (sender, e) => ShowConnectionStatsForm();
             srtm.datadirectory = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar +
@@ -838,9 +840,14 @@ namespace MissionPlanner
             MissionPlanner.Controls.PreFlight.CheckListItem.defaultsrc = MainV2.comPort.MAV.cs;
 
             // when uploading a firmware we dont want to reload this screen.
-            if (instance.MyView.current.Control.GetType() == typeof(GCSViews.InitialSetup)
-                && ((GCSViews.InitialSetup)instance.MyView.current.Control).backstageView.SelectedPage.Text == "Install Firmware")
-                return;
+            if (instance.MyView.current.Control != null && instance.MyView.current.Control.GetType() == typeof(GCSViews.InitialSetup))
+            {
+                var page = ((GCSViews.InitialSetup)instance.MyView.current.Control).backstageView.SelectedPage;
+                if (page != null && page.Text == "Install Firmware")
+                {
+                    return;
+                }
+            }
 
             if (this.InvokeRequired)
             {
@@ -1325,7 +1332,7 @@ namespace MissionPlanner
 
                                 if (ver2 > ver1)
                                 {
-                                    Common.MessageShowAgain(Strings.NewFirmware,
+                                    Common.MessageShowAgain(Strings.NewFirmware + "-" + item.name,
                                         Strings.NewFirmwareA + item.name + Strings.Pleaseup);
                                     break;
                                 }
@@ -2132,10 +2139,13 @@ namespace MissionPlanner
                         {
                             // say the latest high priority message
                             if (MainV2.speechEngine.IsReady &&
-                                lastmessagehigh != MainV2.comPort.MAV.cs.messageHigh)
+                                lastmessagehigh != MainV2.comPort.MAV.cs.messageHigh && MainV2.comPort.MAV.cs.messageHigh != null)
                             {
-                                MainV2.speechEngine.SpeakAsync(MainV2.comPort.MAV.cs.messageHigh);
-                                lastmessagehigh = MainV2.comPort.MAV.cs.messageHigh;
+                                if (!MainV2.comPort.MAV.cs.messageHigh.StartsWith("PX4v2 "))
+                                {
+                                    MainV2.speechEngine.SpeakAsync(MainV2.comPort.MAV.cs.messageHigh);
+                                    lastmessagehigh = MainV2.comPort.MAV.cs.messageHigh;
+                                }
                             }
                         }
                         catch
@@ -2322,6 +2332,7 @@ namespace MissionPlanner
                 }
                 catch (Exception e)
                 {
+                    Tracking.AddException(e);
                     log.Error("Serial Reader fail :" + e.ToString());
                     try
                     {
@@ -2356,11 +2367,11 @@ namespace MissionPlanner
 
             MyView.AddScreen(new MainSwitcher.Screen("FlightData", FlightData, true));
             MyView.AddScreen(new MainSwitcher.Screen("FlightPlanner", FlightPlanner, true));
-            MyView.AddScreen(new MainSwitcher.Screen("HWConfig", typeof(GCSViews.InitialSetup), false));
-            MyView.AddScreen(new MainSwitcher.Screen("SWConfig", typeof(GCSViews.SoftwareConfig), false));
+            MyView.AddScreen(new MainSwitcher.Screen("HWConfig", typeof (GCSViews.InitialSetup), false));
+            MyView.AddScreen(new MainSwitcher.Screen("SWConfig", typeof (GCSViews.SoftwareConfig), false));
             MyView.AddScreen(new MainSwitcher.Screen("Simulation", Simulation, true));
-            MyView.AddScreen(new MainSwitcher.Screen("Terminal", typeof(GCSViews.Terminal), false));
-            MyView.AddScreen(new MainSwitcher.Screen("Help", typeof(GCSViews.Help), false));
+            MyView.AddScreen(new MainSwitcher.Screen("Terminal", typeof (GCSViews.Terminal), false));
+            MyView.AddScreen(new MainSwitcher.Screen("Help", typeof (GCSViews.Help), false));
 
             try
             {
@@ -2413,7 +2424,7 @@ namespace MissionPlanner
                 CustomMessageBox.Show(ex.ToString());
             }
 
-            /// setup joystick packet sender
+            // setup joystick packet sender
             joystickthread = new Thread(new ThreadStart(joysticksend))
             {
                 IsBackground = true,
@@ -2446,83 +2457,16 @@ namespace MissionPlanner
 
             //ThreadPool.QueueUserWorkItem(BGGetAlmanac);
 
-            try
-            {
-                tfr.GetTFRs();
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
+            ThreadPool.QueueUserWorkItem(BGgetTFR);
 
-            try
-            {
-                NoFly.NoFly.Scan();
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
+            ThreadPool.QueueUserWorkItem(BGNoFly);
 
-            try
-            {
-                // check the last kindex date
-                if (Settings.Instance["kindexdate"] == DateTime.Now.ToShortDateString())
-                {
-                    // set the cached kindex
-                    if (Settings.Instance["kindex"] != "")
-                        KIndex_KIndex(Settings.Instance.GetInt32("kindex"), null);
-                }
-                else
-                {
-                    System.Threading.ThreadPool.QueueUserWorkItem((WaitCallback) delegate
-                    {
-                        try
-                        {
-                            // get a new kindex
-                            KIndex.KIndexEvent += KIndex_KIndex;
-                            KIndex.GetKIndex();
 
-                            Settings.Instance["kindexdate"] = DateTime.Now.ToShortDateString();
-                        }
-                        catch
-                        {
-                        }
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
+                    ThreadPool.QueueUserWorkItem(BGGetKIndex);
+
 
             // update firmware version list - only once per day
-            try
-            {
-                System.Threading.ThreadPool.QueueUserWorkItem((WaitCallback) delegate
-                {
-                    try
-                    {
-                        if (Settings.Instance["fw_check"] != DateTime.Now.ToShortDateString())
-                        {
-                            var fw = new Firmware();
-                            var list = fw.getFWList();
-                            if (list.Count > 1)
-                                Firmware.SaveSoftwares(list);
-
-                            Settings.Instance["fw_check"] = DateTime.Now.ToShortDateString();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error(ex);
-                    }
-                }
-                    );
-            }
-            catch
-            {
-            }
+            ThreadPool.QueueUserWorkItem(BGFirmwareCheck);
 
             this.ResumeLayout();
 
@@ -2550,32 +2494,91 @@ namespace MissionPlanner
                 log.Error("Update check failed", ex);
             }
 
-            // play a tlog that was passed to the program
+            // play a tlog that was passed to the program/ load a bin log passed
             if (Program.args.Length > 0)
             {
-                if (File.Exists(Program.args[0]) && Program.args[0].ToLower().Contains(".tlog"))
+                if (File.Exists(Program.args[0]) && Program.args[0].ToLower().EndsWith(".tlog"))
                 {
                     FlightData.LoadLogFile(Program.args[0]);
                     FlightData.BUT_playlog_Click(null, null);
+                } 
+                else if (File.Exists(Program.args[0]) && Program.args[0].ToLower().EndsWith(".bin"))
+                {
+                    LogBrowse logbrowse = new LogBrowse();
+                    ThemeManager.ApplyThemeTo(logbrowse);
+                    logbrowse.logfilename = Program.args[0];
+                    logbrowse.Show();
+                    logbrowse.TopMost = true;
                 }
             }
+        }
 
-            // show wizard on first use
-            /*  if (getConfig("newuser") == "")
-              {
-                  if (CustomMessageBox.Show("This is your first run, Do you wish to use the setup wizard?\nRecomended for new users.", "Wizard", MessageBoxButtons.YesNo) == System.Windows.Forms.DialogResult.Yes)
-                  {
-                      Wizard.Wizard wiz = new Wizard.Wizard();
+        private void BGFirmwareCheck(object state)
+        {
+            try
+            {
+                if (Settings.Instance["fw_check"] != DateTime.Now.ToShortDateString())
+                {
+                    var fw = new Firmware();
+                    var list = fw.getFWList();
+                    if (list.Count > 1)
+                        Firmware.SaveSoftwares(list);
 
-                      wiz.ShowDialog(this);
+                    Settings.Instance["fw_check"] = DateTime.Now.ToShortDateString();
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
 
-                  }
+        private void BGGetKIndex(object state)
+        {
+            try
+            {
+                // check the last kindex date
+                if (Settings.Instance["kindexdate"] == DateTime.Now.ToShortDateString())
+                {
+                    KIndex_KIndex(Settings.Instance.GetInt32("kindex"), null);
+                }
+                else
+                {
+                    // get a new kindex
+                    KIndex.KIndexEvent += KIndex_KIndex;
+                    KIndex.GetKIndex();
 
-                  CustomMessageBox.Show("To use the wizard please goto the initial setup screen, and click the wizard icon.", "Wizard");
+                    Settings.Instance["kindexdate"] = DateTime.Now.ToShortDateString();
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
 
-                  config["newuser"] = DateTime.Now.ToShortDateString();
-              }
-              */
+        private void BGgetTFR(object state)
+        {
+            try
+            {
+                tfr.GetTFRs();
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void BGNoFly(object state)
+        {
+            try
+            {
+                NoFly.NoFly.Scan();
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
         }
 
         private void BGGetAlmanac(object state)
@@ -2657,12 +2660,6 @@ namespace MissionPlanner
             {
                 log.Error("Update check failed", ex);
             }
-        }
-
-        private void TOOL_APMFirmware_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            MainV2.comPort.MAV.cs.firmware =
-                (MainV2.Firmwares) Enum.Parse(typeof (MainV2.Firmwares), _connectionControl.TOOL_APMFirmware.Text);
         }
 
         private void MainV2_Resize(object sender, EventArgs e)
@@ -2998,7 +2995,7 @@ namespace MissionPlanner
             try
             {
                 System.Diagnostics.Process.Start(
-                    "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=mich146%40hotmail%2ecom&lc=AU&item_name=Michael%20Oborne&no_note=0&currency_code=AUD&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHostedGuest");
+                    "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=mich146%40hotmail%2ecom&lc=AU&item_name=Michael%20Oborne&no_note=0&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHostedGuest");
             }
             catch
             {

@@ -684,6 +684,11 @@ namespace MissionPlanner
             set { _trackerloc = value; }
         }
 
+        public PointLatLngAlt Location
+        {
+            get { return new PointLatLngAlt(lat, lng, altasl); }
+        }
+
         [DisplayText("Distance to Home (dist)")]
         public float DistToHome
         {
@@ -909,6 +914,8 @@ namespace MissionPlanner
         public MAVLink.MAV_POWER_STATUS voltageflag { get; set; }
 
         public ushort i2cerrors { get; set; }
+
+        public double timesincelastshot { get; set; }
 
         // requested stream rates
         public byte rateattitude { get; set; }

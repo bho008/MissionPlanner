@@ -51,6 +51,7 @@ namespace MissionPlanner
         PointLatLng currentMousePosition;
         GMapMarker marker;
         GMapMarker CurrentGMapMarker = null;
+        GMapMarkerOverlapCount GMapMarkerOverlap = new GMapMarkerOverlapCount(PointLatLng.Empty);
         int CurrentGMapMarkerIndex = 0;
         bool isMouseDown = false;
         bool isMouseDraging = false;
@@ -65,6 +66,7 @@ namespace MissionPlanner
             public float imagewidth;
             public float imageheight;
         }
+
         public struct GridData
         {
             public List<PointLatLngAlt> poly;
@@ -93,6 +95,7 @@ namespace MissionPlanner
             public decimal overlap;
             public decimal sidelap;
             public decimal spacing;
+            public bool crossgrid;
             // Copter Settings
             public decimal copter_delay;
             public bool copter_headinghold_chk;
@@ -170,6 +173,8 @@ namespace MissionPlanner
 
             label1.Text += " (" + CurrentState.DistanceUnit+")";
             label24.Text += " (" + CurrentState.SpeedUnit + ")";
+
+            domainUpDown1_ValueChanged(this, null);
         }
 
         private void GridUI_Resize(object sender, EventArgs e)
@@ -246,6 +251,7 @@ namespace MissionPlanner
             num_overlap.Value = griddata.overlap;
             num_sidelap.Value = griddata.sidelap;
             NUM_spacing.Value = griddata.spacing;
+            chk_crossgrid.Checked = griddata.crossgrid;
             
             rad_trigdist.Checked = griddata.trigdist;
             rad_digicam.Checked = griddata.digicam;
@@ -293,6 +299,7 @@ namespace MissionPlanner
             griddata.overlap = num_overlap.Value;
             griddata.sidelap = num_sidelap.Value;
             griddata.spacing = NUM_spacing.Value;
+            griddata.crossgrid = chk_crossgrid.Checked;
             
             // Copter Settings
             griddata.copter_delay = NUM_copter_delay.Value;
@@ -339,6 +346,7 @@ namespace MissionPlanner
                 loadsetting("grid_overlap", num_overlap);
                 loadsetting("grid_sidelap", num_sidelap);
                 loadsetting("grid_spacing", NUM_spacing);
+                loadsetting("grid_crossgrid",chk_crossgrid);
 
                 // Should probably be saved as one setting, and us logic
                 loadsetting("grid_trigdist", rad_trigdist);
@@ -406,6 +414,7 @@ namespace MissionPlanner
             plugin.Host.config["grid_overlap"] = num_overlap.Value.ToString();
             plugin.Host.config["grid_sidelap"] = num_sidelap.Value.ToString();
             plugin.Host.config["grid_spacing"] = NUM_spacing.Value.ToString();
+            plugin.Host.config["grid_crossgrid"] = chk_crossgrid.Checked.ToString();
 
             plugin.Host.config["grid_startfrom"] = CMB_startfrom.Text;
 
@@ -556,11 +565,11 @@ namespace MissionPlanner
 
             // new grid system test
 
-            grid = Grid.CreateGrid(list, CurrentState.fromDistDisplayUnit((double)NUM_altitude.Value), (double)NUM_Distance.Value, (double)NUM_spacing.Value, (double)NUM_angle.Value, (double)NUM_overshoot.Value, (double)NUM_overshoot2.Value, (Grid.StartPosition)Enum.Parse(typeof(Grid.StartPosition), CMB_startfrom.Text), false, (float)NUM_Lane_Dist.Value, (float)NUM_leadin.Value);
-
-            List<PointLatLng> list2 = new List<PointLatLng>();
-
-            grid.ForEach(x => { list2.Add(x); });
+            grid = Grid.CreateGrid(list, CurrentState.fromDistDisplayUnit((double) NUM_altitude.Value),
+                (double) NUM_Distance.Value, (double) NUM_spacing.Value, (double) NUM_angle.Value,
+                (double) NUM_overshoot.Value, (double) NUM_overshoot2.Value,
+                (Grid.StartPosition) Enum.Parse(typeof (Grid.StartPosition), CMB_startfrom.Text), false,
+                (float) NUM_Lane_Dist.Value, (float) NUM_leadin.Value);
 
             map.HoldInvalidation = true;
 
@@ -568,9 +577,23 @@ namespace MissionPlanner
             routesOverlay.Polygons.Clear();
             routesOverlay.Markers.Clear();
 
+            GMapMarkerOverlap.Clear();
+
             if (grid.Count == 0)
             {
                 return;
+            }
+
+            if (chk_crossgrid.Checked)
+            {
+                // add crossover
+                Grid.StartPointLatLngAlt = grid[grid.Count - 1];
+
+                grid.AddRange(Grid.CreateGrid(list, CurrentState.fromDistDisplayUnit((double) NUM_altitude.Value),
+                    (double) NUM_Distance.Value, (double) NUM_spacing.Value, (double) NUM_angle.Value + 90.0,
+                    (double) NUM_overshoot.Value, (double) NUM_overshoot2.Value,
+                    Grid.StartPosition.Point, false,
+                    (float) NUM_Lane_Dist.Value, (float) NUM_leadin.Value));
             }
 
             if (CHK_boundary.Checked)
@@ -584,11 +607,13 @@ namespace MissionPlanner
             List<PointLatLng> segment = new List<PointLatLng>();
             double maxgroundelevation = double.MinValue;
             double mingroundelevation = double.MaxValue;
+            double startalt = plugin.Host.cs.HomeAlt;
 
             foreach (var item in grid)
             {
-                mingroundelevation = Math.Min(mingroundelevation, srtm.getAltitude(item.Lat, item.Lng).alt);
-                maxgroundelevation = Math.Max(maxgroundelevation, srtm.getAltitude(item.Lat, item.Lng).alt);
+                double currentalt = srtm.getAltitude(item.Lat, item.Lng).alt;
+                mingroundelevation = Math.Min(mingroundelevation, currentalt);
+                maxgroundelevation = Math.Max(maxgroundelevation, currentalt);
 
                 if (item.Tag == "M")
                 {
@@ -607,32 +632,53 @@ namespace MissionPlanner
                     {
                         if (TXT_fovH.Text != "")
                         {
-                            double fovh = double.Parse(TXT_fovH.Text);
-                            double fovv = double.Parse(TXT_fovV.Text);
-
-                            double startangle = 0;
-
-                            if (!CHK_camdirection.Checked)
-                            {
-                                startangle = 90;
-                            }
-
-                            double angle1 = startangle - (Math.Tan((fovv / 2.0) / (fovh / 2.0)) * rad2deg);
-                            double dist1 = Math.Sqrt(Math.Pow(fovh / 2.0, 2) + Math.Pow(fovv / 2.0, 2));
-
-                            double bearing = (double)NUM_angle.Value;// (prevpoint.GetBearing(item) + 360.0) % 360;
-
-                            List<PointLatLng> footprint = new List<PointLatLng>();
-                            footprint.Add(item.newpos(bearing + angle1, dist1));
-                            footprint.Add(item.newpos(bearing + 180 - angle1, dist1));
-                            footprint.Add(item.newpos(bearing + 180 + angle1, dist1));
-                            footprint.Add(item.newpos(bearing - angle1, dist1));
-
-                            GMapPolygon poly = new GMapPolygon(footprint, a.ToString());
-                            poly.Stroke = new Pen(Color.FromArgb(250 - ((a * 5) % 240), 250 - ((a * 3) % 240), 250 - ((a * 9) % 240)), 1);
-                            poly.Fill = new SolidBrush(Color.FromArgb(40, Color.Purple));
                             if (CHK_footprints.Checked)
+                            {
+                                double fovh = double.Parse(TXT_fovH.Text);
+                                double fovv = double.Parse(TXT_fovV.Text);
+
+                                getFOV(item.Alt + startalt - currentalt, ref fovh, ref fovv);
+
+                                double startangle = 0;
+
+                                if (!CHK_camdirection.Checked)
+                                {
+                                    startangle = 90;
+                                }
+
+                                double angle1 = startangle - (Math.Sin((fovh/2.0)/(fovv/2.0))*rad2deg);
+                                double dist1 = Math.Sqrt(Math.Pow(fovh/2.0, 2) + Math.Pow(fovv/2.0, 2));
+
+                                double bearing = (double)NUM_angle.Value;
+
+                                if (CHK_copter_headinghold.Checked)
+                                {
+                                    bearing = Convert.ToInt32(TXT_headinghold.Text);
+                                }
+
+                                double fovha = 0;
+                                double fovva = 0;
+                                getFOVangle(ref fovha, ref fovva);
+                                var itemcopy = new PointLatLngAlt(item);
+                                itemcopy.Alt += startalt;
+                                var temp = ImageProjection.calc(itemcopy, 0, 0, bearing, fovha, fovva);
+
+                                List<PointLatLng> footprint = new List<PointLatLng>();
+                                footprint.Add(temp[0]);
+                                footprint.Add(temp[1]);
+                                footprint.Add(temp[2]);
+                                footprint.Add(temp[3]);
+
+                                GMapPolygon poly = new GMapPolygon(footprint, a.ToString());
+                                poly.Stroke =
+                                    new Pen(Color.FromArgb(250 - ((a*5)%240), 250 - ((a*3)%240), 250 - ((a*9)%240)), 1);
+                                poly.Fill = new SolidBrush(Color.Transparent);
+
+                                GMapMarkerOverlap.Add(poly);
+
                                 routesOverlay.Polygons.Add(poly);
+                                a++;
+                            }
                         }
                     }
                     catch { }
@@ -663,6 +709,8 @@ namespace MissionPlanner
                 segment.Clear();
             }
 
+            if (CHK_footprints.Checked)
+                routesOverlay.Markers.Add(GMapMarkerOverlap);
             /*      Old way of drawing route, incase something breaks using segments
             GMapRoute wproute = new GMapRoute(list2, "GridRoute");
             wproute.Stroke = new Pen(Color.Yellow, 4);
@@ -748,20 +796,20 @@ namespace MissionPlanner
             map.Invalidate();
         }
 
-        private void AddWP(double Lng, double Lat, double Alt)
+        private void AddWP(double Lng, double Lat, double Alt, object gridobject = null)
         {
             if (CHK_copter_headinghold.Checked)
             {
-                plugin.Host.AddWPtoList(MAVLink.MAV_CMD.CONDITION_YAW, Convert.ToInt32(TXT_headinghold.Text), 0, 0, 0, 0, 0, 0);
+                plugin.Host.AddWPtoList(MAVLink.MAV_CMD.CONDITION_YAW, Convert.ToInt32(TXT_headinghold.Text), 0, 0, 0, 0, 0, 0, gridobject);
             }
 
             if (NUM_copter_delay.Value > 0)
             {
-                plugin.Host.AddWPtoList(MAVLink.MAV_CMD.WAYPOINT, (double)NUM_copter_delay.Value, 0, 0, 0, Lng, Lat, Alt * CurrentState.multiplierdist);
+                plugin.Host.AddWPtoList(MAVLink.MAV_CMD.WAYPOINT, (double)NUM_copter_delay.Value, 0, 0, 0, Lng, Lat, Alt * CurrentState.multiplierdist, gridobject);
             }
             else
             {
-                plugin.Host.AddWPtoList(MAVLink.MAV_CMD.WAYPOINT, 0, 0, 0, 0, Lng, Lat, (int)(Alt * CurrentState.multiplierdist));
+                plugin.Host.AddWPtoList(MAVLink.MAV_CMD.WAYPOINT, 0, 0, 0, 0, Lng, Lat, (int)(Alt * CurrentState.multiplierdist), gridobject);
             }
         }
 
@@ -893,6 +941,16 @@ namespace MissionPlanner
 
             fovh = viewwidth;
             fovv = viewheight;
+        }
+
+        void getFOVangle(ref double fovh, ref double fovv)
+        {
+            double focallen = (double)NUM_focallength.Value;
+            double sensorwidth = double.Parse(TXT_senswidth.Text);
+            double sensorheight = double.Parse(TXT_sensheight.Text);
+
+            fovh = (float)(Math.Atan(sensorwidth / (2 * focallen)) * rad2deg * 2);
+            fovv = (float)(Math.Atan(sensorheight / (2 * focallen)) * rad2deg * 2);
         }
 
         void doCalc()
@@ -1429,6 +1487,8 @@ namespace MissionPlanner
                     return;
                 }
 
+                var gridobject = savegriddata();
+
                 int wpsplit = (int)Math.Round(grid.Count / NUM_split.Value,MidpointRounding.AwayFromZero);
 
                 List<int> wpsplitstart = new List<int>();
@@ -1453,14 +1513,14 @@ namespace MissionPlanner
                         if (plugin.Host.cs.firmware == MainV2.Firmwares.ArduCopter2)
                         {
                             var wpno = plugin.Host.AddWPtoList(MAVLink.MAV_CMD.TAKEOFF, 20, 0, 0, 0, 0, 0,
-                                (int) (30*CurrentState.multiplierdist));
+                                (int)(30 * CurrentState.multiplierdist), gridobject);
 
                             wpsplitstart.Add(wpno);
                         }
                         else
                         {
                             var wpno = plugin.Host.AddWPtoList(MAVLink.MAV_CMD.TAKEOFF, 20, 0, 0, 0, 0, 0,
-                                (int) (30*CurrentState.multiplierdist));
+                                (int)(30 * CurrentState.multiplierdist), gridobject);
 
                             wpsplitstart.Add(wpno);
                         }
@@ -1469,7 +1529,7 @@ namespace MissionPlanner
                     if (CHK_usespeed.Checked)
                     {
                         plugin.Host.AddWPtoList(MAVLink.MAV_CMD.DO_CHANGE_SPEED, 0,
-                            (int) ((float) NUM_UpDownFlySpeed.Value/CurrentState.multiplierspeed), 0, 0, 0, 0, 0);
+                            (int)((float)NUM_UpDownFlySpeed.Value / CurrentState.multiplierspeed), 0, 0, 0, 0, 0, gridobject);
                     }
 
                     int i = 0;
@@ -1494,12 +1554,12 @@ namespace MissionPlanner
                                 {
                                     AddWP(plla.Lng, plla.Lat, plla.Alt);
                                     plugin.Host.AddWPtoList(MAVLink.MAV_CMD.DO_REPEAT_SERVO, (float) NUM_reptservo.Value,
-                                        (float) num_reptpwm.Value, 999, (float) NUM_repttime.Value, 0, 0, 0);
+                                        (float)num_reptpwm.Value, 999, (float)NUM_repttime.Value, 0, 0, 0, gridobject);
                                 }
                                 if (rad_digicam.Checked)
                                 {
                                     AddWP(plla.Lng, plla.Lat, plla.Alt);
-                                    plugin.Host.AddWPtoList(MAVLink.MAV_CMD.DO_DIGICAM_CONTROL, 1, 0, 0, 0, 1, 0, 0);
+                                    plugin.Host.AddWPtoList(MAVLink.MAV_CMD.DO_DIGICAM_CONTROL, 1, 0, 0, 0, 0, 1, 0, gridobject);
                                 }
                             }
                             else
@@ -1515,12 +1575,12 @@ namespace MissionPlanner
                                         {
                                             plugin.Host.AddWPtoList(MAVLink.MAV_CMD.DO_SET_CAM_TRIGG_DIST,
                                                 (float) NUM_spacing.Value,
-                                                0, 0, 0, 0, 0, 0);
+                                                0, 0, 0, 0, 0, 0, gridobject);
                                         }
                                         else if (plla.Tag == "ME")
                                         {
                                             plugin.Host.AddWPtoList(MAVLink.MAV_CMD.DO_SET_CAM_TRIGG_DIST, 0,
-                                                0, 0, 0, 0, 0, 0);
+                                                0, 0, 0, 0, 0, 0, gridobject);
                                         }
                                     }
                                     else
@@ -1529,7 +1589,7 @@ namespace MissionPlanner
                                         {
                                             plugin.Host.AddWPtoList(MAVLink.MAV_CMD.DO_SET_CAM_TRIGG_DIST,
                                                 (float) NUM_spacing.Value,
-                                                0, 0, 0, 0, 0, 0);
+                                                0, 0, 0, 0, 0, 0, gridobject);
                                             startedtrigdist = true;
                                         }
                                     }
@@ -1538,7 +1598,7 @@ namespace MissionPlanner
                         }
                         else
                         {
-                            AddWP(plla.Lng, plla.Lat, plla.Alt);
+                            AddWP(plla.Lng, plla.Lat, plla.Alt, gridobject);
                         }
                         lastplla = plla;
                         ++i;
@@ -1547,7 +1607,7 @@ namespace MissionPlanner
                     // end
                     if (rad_trigdist.Checked)
                     {
-                        plugin.Host.AddWPtoList(MAVLink.MAV_CMD.DO_SET_CAM_TRIGG_DIST, 0, 0, 0, 0, 0, 0, 0);
+                        plugin.Host.AddWPtoList(MAVLink.MAV_CMD.DO_SET_CAM_TRIGG_DIST, 0, 0, 0, 0, 0, 0, 0, gridobject);
                     }
 
                     if (CHK_usespeed.Checked)
@@ -1556,7 +1616,7 @@ namespace MissionPlanner
                         {
                             double speed = MainV2.comPort.MAV.param["WPNAV_SPEED"].Value;
                             speed = speed/100;
-                            plugin.Host.AddWPtoList(MAVLink.MAV_CMD.DO_CHANGE_SPEED, 0, speed, 0, 0, 0, 0, 0);
+                            plugin.Host.AddWPtoList(MAVLink.MAV_CMD.DO_CHANGE_SPEED, 0, speed, 0, 0, 0, 0, 0, gridobject);
                         }
                     }
 
@@ -1564,12 +1624,12 @@ namespace MissionPlanner
                     {
                         if (CHK_toandland_RTL.Checked)
                         {
-                            plugin.Host.AddWPtoList(MAVLink.MAV_CMD.RETURN_TO_LAUNCH, 0, 0, 0, 0, 0, 0, 0);
+                            plugin.Host.AddWPtoList(MAVLink.MAV_CMD.RETURN_TO_LAUNCH, 0, 0, 0, 0, 0, 0, 0, gridobject);
                         }
                         else
                         {
                             plugin.Host.AddWPtoList(MAVLink.MAV_CMD.LAND, 0, 0, 0, 0, plugin.Host.cs.HomeLocation.Lng,
-                                plugin.Host.cs.HomeLocation.Lat, 0);
+                                plugin.Host.cs.HomeLocation.Lat, 0, gridobject);
                         }
                     }
                 }
@@ -1580,7 +1640,7 @@ namespace MissionPlanner
                     foreach (var i in wpsplitstart)
                     {
                         // add do jump
-                        plugin.Host.InsertWP(index, MAVLink.MAV_CMD.DO_JUMP, i + wpsplitstart.Count + 1, 1, 0, 0, 0, 0, 0);
+                        plugin.Host.InsertWP(index, MAVLink.MAV_CMD.DO_JUMP, i + wpsplitstart.Count + 1, 1, 0, 0, 0, 0, 0, gridobject);
                         index++;
                     }
                     
@@ -1588,6 +1648,13 @@ namespace MissionPlanner
 
                 // Redraw the polygon in FP
                 plugin.Host.RedrawFPPolygon(list);
+
+                // save camera fov's for use with footprints
+                double fovha = 0;
+                double fovva = 0;
+                getFOVangle(ref fovha, ref fovva);
+                Settings.Instance["camera_fovh"] = fovha.ToString();
+                Settings.Instance["camera_fovv"] = fovva.ToString();
 
                 savesettings();
 

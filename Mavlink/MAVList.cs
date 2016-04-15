@@ -20,6 +20,13 @@ namespace MissionPlanner.Mavlink
             hiddenlist.Add(0,new MAVState());
         }
 
+        public void AddHiddenList(byte sysid, byte compid)
+        {
+            int id = (byte)sysid * 256 + (byte)compid;
+
+            hiddenlist[id] = new MAVState() { sysid = sysid, compid = compid };
+        }
+
         public MAVState this[int sysid, int compid]
         {
             get
@@ -38,13 +45,6 @@ namespace MissionPlanner.Mavlink
             set
             {
                 int id = (byte) sysid*256 + (byte) compid;
-
-                // 3dr radio special case
-                if (sysid == 51 && compid == 68)
-                {
-                    hiddenlist[id] = value;
-                    return;
-                }
 
                 masterlist[id] = value;
             }
@@ -70,7 +70,7 @@ namespace MissionPlanner.Mavlink
             masterlist.Clear();
         }
 
-        public bool Contains(byte sysid, byte compid)
+        public bool Contains(byte sysid, byte compid, bool includehidden = true)
         {
             foreach (var item in masterlist)
             {
@@ -78,10 +78,13 @@ namespace MissionPlanner.Mavlink
                     return true;
             }
 
-            foreach (var item in hiddenlist)
+            if (includehidden)
             {
-                if (item.Value.sysid == sysid && item.Value.compid == compid)
-                    return true;
+                foreach (var item in hiddenlist)
+                {
+                    if (item.Value.sysid == sysid && item.Value.compid == compid)
+                        return true;
+                }
             }
 
             return false;
@@ -90,6 +93,13 @@ namespace MissionPlanner.Mavlink
         internal void Create(byte sysid, byte compid)
         {
             int id = (byte) sysid*256 + (byte) compid;
+
+            // move from hidden to visible
+            if (hiddenlist.ContainsKey(id))
+            {
+                masterlist[id] = hiddenlist[id];
+                hiddenlist.Remove(id);
+            }
 
             if (!masterlist.ContainsKey(id))
                 masterlist[id] = new MAVState();

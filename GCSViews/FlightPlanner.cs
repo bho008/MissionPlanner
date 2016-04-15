@@ -80,18 +80,18 @@ namespace MissionPlanner.GCSViews
 
         private void poieditToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (CurrentGMapMarker == null)
+            if (CurrentPOIMarker == null)
                 return;
 
-            POI.POIEdit(CurrentGMapMarker.Position);
+            POI.POIEdit(CurrentPOIMarker);
         }
 
         private void poideleteToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (CurrentGMapMarker == null)
+            if (CurrentPOIMarker  == null)
                 return;
 
-            POI.POIDelete(CurrentGMapMarker.Position);
+            POI.POIDelete(CurrentPOIMarker);
         }
 
         private void poiaddToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1903,31 +1903,40 @@ namespace MissionPlanner.GCSViews
 
         Locationwp DataViewtoLocationwp(int a)
         {
-            Locationwp temp = new Locationwp();
-            if (Commands.Rows[a].Cells[Command.Index].Value.ToString().Contains("UNKNOWN"))
+            try
             {
-                temp.id = (byte) Commands.Rows[a].Cells[Command.Index].Tag;
+                Locationwp temp = new Locationwp();
+                if (Commands.Rows[a].Cells[Command.Index].Value.ToString().Contains("UNKNOWN"))
+                {
+                    temp.id = (byte) Commands.Rows[a].Cells[Command.Index].Tag;
+                }
+                else
+                {
+                    temp.id =
+                        (byte)
+                            (int)
+                                Enum.Parse(typeof (MAVLink.MAV_CMD),
+                                    Commands.Rows[a].Cells[Command.Index].Value.ToString(),
+                                    false);
+                }
+                temp.p1 = float.Parse(Commands.Rows[a].Cells[Param1.Index].Value.ToString());
+
+                temp.alt =
+                    (float)
+                        (double.Parse(Commands.Rows[a].Cells[Alt.Index].Value.ToString())/CurrentState.multiplierdist);
+                temp.lat = (double.Parse(Commands.Rows[a].Cells[Lat.Index].Value.ToString()));
+                temp.lng = (double.Parse(Commands.Rows[a].Cells[Lon.Index].Value.ToString()));
+
+                temp.p2 = (float) (double.Parse(Commands.Rows[a].Cells[Param2.Index].Value.ToString()));
+                temp.p3 = (float) (double.Parse(Commands.Rows[a].Cells[Param3.Index].Value.ToString()));
+                temp.p4 = (float) (double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString()));
+
+                return temp;
             }
-            else
+            catch (Exception ex)
             {
-                temp.id =
-                    (byte)
-                        (int)
-                            Enum.Parse(typeof (MAVLink.MAV_CMD), Commands.Rows[a].Cells[Command.Index].Value.ToString(),
-                                false);
+                throw new FormatException("Invalid number on row " + (a + 1).ToString(), ex);
             }
-            temp.p1 = float.Parse(Commands.Rows[a].Cells[Param1.Index].Value.ToString());
-
-            temp.alt =
-                (float) (double.Parse(Commands.Rows[a].Cells[Alt.Index].Value.ToString())/CurrentState.multiplierdist);
-            temp.lat = (double.Parse(Commands.Rows[a].Cells[Lat.Index].Value.ToString()));
-            temp.lng = (double.Parse(Commands.Rows[a].Cells[Lon.Index].Value.ToString()));
-
-            temp.p2 = (float) (double.Parse(Commands.Rows[a].Cells[Param2.Index].Value.ToString()));
-            temp.p3 = (float) (double.Parse(Commands.Rows[a].Cells[Param3.Index].Value.ToString()));
-            temp.p4 = (float) (double.Parse(Commands.Rows[a].Cells[Param4.Index].Value.ToString()));
-
-            return temp;
         }
 
         List<Locationwp> GetCommandList()
@@ -2754,6 +2763,7 @@ namespace MissionPlanner.GCSViews
         string mobileGpsLog = string.Empty;
         GMapMarkerRect CurentRectMarker;
         GMapMarkerRallyPt CurrentRallyPt;
+        GMapMarkerPOI CurrentPOIMarker;
         GMapMarker CurrentGMapMarker;
         bool isMouseDown;
         bool isMouseDraging;
@@ -2779,6 +2789,10 @@ namespace MissionPlanner.GCSViews
                 if (item is GMapMarkerRallyPt)
                 {
                     CurrentRallyPt = null;
+                }
+                if (item is GMapMarkerPOI)
+                {
+                    CurrentPOIMarker = null;
                 }
                 if (item is GMapMarker)
                 {
@@ -2824,9 +2838,17 @@ namespace MissionPlanner.GCSViews
                     // do nothing - readonly
                     return;
                 }
+                if (item is GMapMarkerPOI)
+                {
+                    CurrentPOIMarker = item as GMapMarkerPOI;
+                }
+                if (item is GMapMarkerWP)
+                {
+                    //CurrentGMapMarker = item;
+                }
                 if (item is GMapMarker)
                 {
-                    CurrentGMapMarker = item;
+                    //CurrentGMapMarker = item;
                 }
             }
         }
@@ -3132,6 +3154,13 @@ namespace MissionPlanner.GCSViews
 
             if (isMouseDown) // mouse down on some other object and dragged to here.
             {
+                // drag finished, update poi db
+                if (CurrentPOIMarker != null)
+                {
+                    POI.POIMove(CurrentPOIMarker);
+                    CurrentPOIMarker = null;
+                }
+
                 if (e.Button == MouseButtons.Left)
                 {
                     isMouseDown = false;
@@ -3385,6 +3414,12 @@ namespace MissionPlanner.GCSViews
                         CurentRectMarker.InnerMarker.Position = pnew;
                     }
                 }
+                else if (CurrentPOIMarker != null)
+                {
+                    PointLatLng pnew = MainMap.FromLocalToLatLng(e.X, e.Y);
+
+                    CurrentPOIMarker.Position = pnew;
+                }
                 else if (CurrentGMapMarker != null)
                 {
                     PointLatLng pnew = MainMap.FromLocalToLatLng(e.X, e.Y);
@@ -3444,7 +3479,8 @@ namespace MissionPlanner.GCSViews
             MethodInvoker m = delegate { lbl_status.Text = "Status: loading tiles..."; };
             try
             {
-                BeginInvoke(m);
+                if (IsHandleCreated)
+                    BeginInvoke(m);
             }
             catch
             {
@@ -3466,7 +3502,7 @@ namespace MissionPlanner.GCSViews
             };
             try
             {
-                if (!IsDisposed)
+                if (!IsDisposed && IsHandleCreated)
                     BeginInvoke(m);
             }
             catch
@@ -4730,7 +4766,7 @@ namespace MissionPlanner.GCSViews
         {
             timer1.Start();
 
-            if (MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2 &&
+            if (MainV2.comPort.BaseStream.IsOpen && MainV2.comPort.MAV.cs.firmware == MainV2.Firmwares.ArduCopter2 &&
                 MainV2.comPort.MAV.cs.version < new Version(3, 3))
             {
                 CMB_altmode.Visible = false;
@@ -5080,11 +5116,11 @@ namespace MissionPlanner.GCSViews
         }
 
         public int AddCommand(MAVLink.MAV_CMD cmd, double p1, double p2, double p3, double p4, double x, double y,
-            double z)
+            double z, object tag = null)
         {
             selectedrow = Commands.Rows.Add();
 
-            FillCommand(this.selectedrow, cmd, p1, p2, p3, p4, x, y, z);
+            FillCommand(this.selectedrow, cmd, p1, p2, p3, p4, x, y, z, tag);
 
             writeKML();
 
@@ -5092,11 +5128,11 @@ namespace MissionPlanner.GCSViews
         }
 
         public void InsertCommand(int rowIndex, MAVLink.MAV_CMD cmd, double p1, double p2, double p3, double p4, double x, double y,
-            double z)
+            double z, object tag = null)
         {
             if (Commands.Rows.Count <= rowIndex)
             {
-                AddCommand(cmd, p1, p2, p3, p4, x, y, z);
+                AddCommand(cmd, p1, p2, p3, p4, x, y, z, tag);
                 return;
             }
 
@@ -5104,15 +5140,18 @@ namespace MissionPlanner.GCSViews
 
             this.selectedrow = rowIndex;
 
-            FillCommand(this.selectedrow, cmd, p1, p2, p3, p4, x, y, z);
+            FillCommand(this.selectedrow, cmd, p1, p2, p3, p4, x, y, z, tag);
 
             writeKML();
         }
 
         private void FillCommand(int rowIndex, MAVLink.MAV_CMD cmd, double p1, double p2, double p3, double p4, double x,
-            double y, double z)
+            double y, double z, object tag = null)
         {
             Commands.Rows[rowIndex].Cells[Command.Index].Value = cmd.ToString();
+            Commands.Rows[rowIndex].Cells[Tag.Index].Tag = tag;
+            Commands.Rows[rowIndex].Cells[Tag.Index].Value = tag;
+
             ChangeColumnHeader(cmd.ToString());
 
             // switch wp to spline if spline checked
@@ -5124,6 +5163,9 @@ namespace MissionPlanner.GCSViews
 
             if (cmd == MAVLink.MAV_CMD.WAYPOINT)
             {
+                // add delay if supplied
+                Commands.Rows[rowIndex].Cells[Param1.Index].Value = p1;
+
                 setfromMap(y, x, (int)z, Math.Round(p1, 1));
             }
             else if (cmd == MAVLink.MAV_CMD.LOITER_UNLIM)

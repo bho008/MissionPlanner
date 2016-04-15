@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using GMap.NET;
+using MissionPlanner.Utilities;
 
 namespace MissionPlanner
 {
@@ -25,6 +27,10 @@ namespace MissionPlanner
             this.SoftwareVersions = "";
             this.SerialString = "";
             this.FrameString = "";
+
+            camerapoints.Clear();
+
+            GMapMarkerOverlapCount.Clear();
 
             this.packetslost = 0f;
             this.packetsnotlost = 0f;
@@ -117,6 +123,10 @@ namespace MissionPlanner
         public Dictionary<int, mavlink_rally_point_t> rallypoints = new Dictionary<int, mavlink_rally_point_t>();
 
         public Dictionary<int, mavlink_fence_point_t> fencepoints = new Dictionary<int, mavlink_fence_point_t>();
+
+        public List<mavlink_camera_feedback_t> camerapoints = new List<mavlink_camera_feedback_t>();
+
+        public GMapMarkerOverlapCount GMapMarkerOverlapCount = new GMapMarkerOverlapCount(PointLatLng.Empty);
 
         /// <summary>
         /// Store the guided mode wp location

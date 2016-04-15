@@ -32,7 +32,6 @@ using MissionPlanner.Log;
 using MissionPlanner.Maps;
 using MissionPlanner.Swarm;
 using MissionPlanner.Utilities;
-using MissionPlanner.Utilities.DroneApi;
 using MissionPlanner.Warnings;
 using resedit;
 using ILog = log4net.ILog;
@@ -1173,19 +1172,26 @@ namespace MissionPlanner
             if (comport != null)
                 comport.Close();
 
-            comport = new MAVLinkSerialPort(MainV2.comPort, MAVLink.SERIAL_CONTROL_DEV.GPS1);
-
-            if (listener != null)
+            try
             {
-                listener.Stop();
-                listener = null;
+                comport = new MAVLinkSerialPort(MainV2.comPort, MAVLink.SERIAL_CONTROL_DEV.GPS1);
+
+                if (listener != null)
+                {
+                    listener.Stop();
+                    listener = null;
+                }
+
+                listener = new TcpListener(IPAddress.Any, 500);
+
+                listener.Start();
+
+                listener.BeginAcceptTcpClient(new AsyncCallback(DoAcceptTcpClientCallback), listener);
             }
-
-            listener = new TcpListener(IPAddress.Any, 500);
-
-            listener.Start();
-
-            listener.BeginAcceptTcpClient(new AsyncCallback(DoAcceptTcpClientCallback), listener);
+            catch (Exception ex)
+            {
+                CustomMessageBox.Show(ex.ToString(), Strings.ERROR);
+            }
         }
 
         private void DoAcceptTcpClientCallback(IAsyncResult ar)
@@ -1329,60 +1335,7 @@ namespace MissionPlanner
                 }
             }
         }
-
-        private void but_droneshare_Click(object sender, EventArgs e)
-        {
-            using (OpenFileDialog ofd = new OpenFileDialog())
-            {
-                ofd.Filter = "tlog|*.tlog|*.log|*.log";
-                ofd.Multiselect = true;
-                ofd.ShowDialog();
-
-                string droneshareusername = Settings.Instance["droneshareusername"];
-
-                InputBox.Show("Username", "Username", ref droneshareusername);
-
-                Settings.Instance["droneshareusername"] = droneshareusername;
-
-                string dronesharepassword = Settings.Instance["dronesharepassword"];
-
-                if (dronesharepassword != "")
-                {
-                    try
-                    {
-                        // fail on bad entry
-                        var crypto = new Crypto();
-                        dronesharepassword = crypto.DecryptString(dronesharepassword);
-                    }
-                    catch
-                    {
-                    }
-                }
-
-                InputBox.Show("Password", "Password", ref dronesharepassword, true);
-
-                var crypto2 = new Crypto();
-
-                string encryptedpw = crypto2.EncryptString(dronesharepassword);
-
-                Settings.Instance["dronesharepassword"] = encryptedpw;
-
-                if (File.Exists(ofd.FileName))
-                {
-                    foreach (var file in ofd.FileNames)
-                    {
-                        string viewurl = droneshare.doUpload(file, droneshareusername, dronesharepassword,
-                            Guid.NewGuid().ToString());
-
-                        if (viewurl != "")
-                            Process.Start(viewurl);
-                    }
-                }
-
-                dronesharepassword = null;
-            }
-        }
-
+        
         String SecureStringToString(SecureString value)
         {
             IntPtr valuePtr = IntPtr.Zero;
@@ -1399,12 +1352,18 @@ namespace MissionPlanner
 
         private void but_gimbaltest_Click(object sender, EventArgs e)
         {
-            var answer = GimbalPoint.ProjectPoint();
+            if (MainV2.comPort.BaseStream.IsOpen)
+                GimbalPoint.ProjectPoint();
+            else
+                CustomMessageBox.Show(Strings.PleaseConnect, Strings.ERROR);
         }
 
         private void but_mntstatus_Click(object sender, EventArgs e)
         {
-            MainV2.comPort.GetMountStatus();
+            if (MainV2.comPort.BaseStream.IsOpen)
+                MainV2.comPort.GetMountStatus();
+            else
+                CustomMessageBox.Show(Strings.PleaseConnect,Strings.ERROR);
         }
 
         private void but_maplogs_Click(object sender, EventArgs e)
@@ -1415,6 +1374,8 @@ namespace MissionPlanner
             if (fbd.ShowDialog() == DialogResult.OK)
             {
                 LogMap.MapLogs(Directory.GetFiles(fbd.SelectedPath, "*.tlog", SearchOption.AllDirectories));
+                LogMap.MapLogs(Directory.GetFiles(fbd.SelectedPath, "*.bin", SearchOption.AllDirectories));
+                LogMap.MapLogs(Directory.GetFiles(fbd.SelectedPath, "*.log", SearchOption.AllDirectories));
             }
         }
 
@@ -1423,71 +1384,6 @@ namespace MissionPlanner
             LogIndex form = new LogIndex();
 
             form.Show();
-        }
-
-        private void but_droneapi_Click(object sender, EventArgs e)
-        {
-            string droneshareusername = Settings.Instance["droneshareusername"];
-
-            InputBox.Show("Username", "Username", ref droneshareusername);
-
-            Settings.Instance["droneshareusername"] = droneshareusername;
-
-            string dronesharepassword = Settings.Instance["dronesharepassword"];
-
-            if (dronesharepassword != "")
-            {
-                try
-                {
-                    // fail on bad entry
-                    var crypto = new Crypto();
-                    dronesharepassword = crypto.DecryptString(dronesharepassword);
-                }
-                catch
-                {
-                }
-            }
-
-            InputBox.Show("Password", "Password", ref dronesharepassword, true);
-
-            var crypto2 = new Crypto();
-
-            string encryptedpw = crypto2.EncryptString(dronesharepassword);
-
-            Settings.Instance["dronesharepassword"] = encryptedpw;
-
-            DroneProto dp = new DroneProto();
-
-            if (dp.connect())
-            {
-                if (dp.loginUser(droneshareusername, dronesharepassword))
-                {
-                    MAVLinkInterface mine = new MAVLinkInterface();
-                    var comfile = new CommsFile();
-                    mine.BaseStream = comfile;
-                    mine.BaseStream.PortName = @"C:\Users\hog\Documents\apm logs\iris 6-4-14\2014-04-06 09-07-32.tlog";
-                    mine.BaseStream.Open();
-
-                    comfile.bps = 4000;
-
-                    mine.getHeartBeat();
-
-                    dp.setVechileId(mine.MAV.Guid, 0, mine.MAV.sysid);
-
-                    dp.startMission();
-
-                    while (true)
-                    {
-                        byte[] packet = mine.readPacket();
-
-                        dp.SendMavlink(packet, 0);
-                    }
-
-                    // dp.close();
-
-                    // mine.Close();
-                }
-            }
         }
 
         private void but_terrain_Click(object sender, EventArgs e)
@@ -1674,6 +1570,74 @@ namespace MissionPlanner
                 CustomMessageBox.Show(ex.ToString(), Strings.ERROR);
             }
 
+        }
+
+        private void but_agemapdata_Click(object sender, EventArgs e)
+        {
+            int removed = ((PureImageCache)Maps.MyImageCache.Instance).DeleteOlderThan(DateTime.Now.AddDays(-30),
+                FlightData.instance.gMapControl1.MapProvider.DbId);
+            
+            CustomMessageBox.Show("Removed " + removed + " images");
+
+            log.InfoFormat("Removed {0} images", removed);
+        }
+
+        private void myButton1_Click_2(object sender, EventArgs e)
+        {
+            ParameterMetaDataParser.GetParameterInformation(
+         "https://raw.githubusercontent.com/ArduPilot/ardupilot/ArduCopter-2.8.1/ArduCopter/Parameters.pde"
+         , "ArduCopter2.8.1.xml");
+
+            ParameterMetaDataParser.GetParameterInformation(
+         "https://raw.githubusercontent.com/ArduPilot/ardupilot/ArduCopter-2.9.1/ArduCopter/Parameters.pde"
+         , "ArduCopter2.9.1.xml");
+
+            ParameterMetaDataParser.GetParameterInformation(
+                "https://raw.githubusercontent.com/ArduPilot/ardupilot/ArduCopter-3.0/ArduCopter/Parameters.pde"
+                , "ArduCopter3.0.xml");
+
+            ParameterMetaDataParser.GetParameterInformation(
+                "https://raw.githubusercontent.com/ArduPilot/ardupilot/ArduCopter-3.1.5/ArduCopter/Parameters.pde"
+                , "ArduCopter3.1.5.xml");
+
+            ParameterMetaDataParser.GetParameterInformation(
+                "https://raw.githubusercontent.com/ArduPilot/ardupilot/ArduCopter-3.2.1/ArduCopter/Parameters.pde"
+                , "ArduCopter3.2.1.xml");
+
+            ParameterMetaDataParser.GetParameterInformation(
+                "https://raw.githubusercontent.com/ArduPilot/ardupilot/Copter-3.3.2/ArduCopter/Parameters.cpp"
+                , "ArduCopter3.3.2.xml");
+
+
+// plane
+
+            ParameterMetaDataParser.GetParameterInformation(
+        "https://raw.githubusercontent.com/ArduPilot/ardupilot/ArduPlane-3.5.2/ArduPlane/Parameters.cpp"
+        , "ArduPlane3.5.2.xml");
+
+            ParameterMetaDataParser.GetParameterInformation(
+"https://raw.githubusercontent.com/ArduPilot/ardupilot/ArduPlane-3.3.0/ArduPlane/Parameters.pde"
+, "ArduPlane3.3.0.xml");
+
+            ParameterMetaDataParser.GetParameterInformation(
+"https://raw.githubusercontent.com/ArduPilot/ardupilot/ArduPlane-3.2.2/ArduPlane/Parameters.pde"
+, "ArduPlane3.2.2.xml");
+
+            ParameterMetaDataParser.GetParameterInformation(
+"https://raw.githubusercontent.com/ArduPilot/ardupilot/ArduPlane-3.1.0/ArduPlane/Parameters.pde"
+, "ArduPlane3.1.0.xml");
+
+            ParameterMetaDataParser.GetParameterInformation(
+"https://raw.githubusercontent.com/ArduPilot/ardupilot/ArduPlane-3.0.3/ArduPlane/Parameters.pde"
+, "ArduPlane3.0.3.xml");
+
+            ParameterMetaDataParser.GetParameterInformation(
+"https://raw.githubusercontent.com/ArduPilot/ardupilot/ArduPlane-2.78b/ArduPlane/Parameters.pde"
+, "ArduPlane2.78b.xml");
+
+            ParameterMetaDataParser.GetParameterInformation(
+"https://raw.githubusercontent.com/ArduPilot/ardupilot/ArduPlane-2.75/ArduPlane/Parameters.pde"
+, "ArduPlane2.75.xml");
         }
     }
 }
