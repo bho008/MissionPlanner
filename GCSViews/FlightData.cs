@@ -76,7 +76,7 @@ namespace MissionPlanner.GCSViews
         internal static GMapOverlay rallypointoverlay;
         internal static GMapOverlay photosoverlay;
         internal static GMapOverlay poioverlay = new GMapOverlay("POI"); // poi layer
-        internal static GMapOverlay ObstaclesOverlay;
+        internal static GMapOverlay ObstaclesOverlay; // this is where we will add our obstacles
 
         List<TabPage> TabListOriginal = new List<TabPage>();
 
