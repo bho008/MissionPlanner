@@ -76,6 +76,7 @@ namespace MissionPlanner.GCSViews
         internal static GMapOverlay rallypointoverlay;
         internal static GMapOverlay photosoverlay;
         internal static GMapOverlay poioverlay = new GMapOverlay("POI"); // poi layer
+        internal static GMapOverlay ObstaclesOverlay;
 
         List<TabPage> TabListOriginal = new List<TabPage>();
 
@@ -171,6 +172,9 @@ namespace MissionPlanner.GCSViews
             log.Info("Ctor Start");
 
             InitializeComponent();
+            AddObstaclesTest ObstacleForm = new AddObstaclesTest();
+            ObstacleForm.Show();
+
 
             log.Info("Components Done");
 
@@ -318,6 +322,9 @@ namespace MissionPlanner.GCSViews
             gMapControl1.Overlays.Add(rallypointoverlay);
 
             gMapControl1.Overlays.Add(poioverlay);
+
+            ObstaclesOverlay = new GMapOverlay("obstacle overlay");
+            gMapControl1.Overlays.Add(ObstaclesOverlay);
 
             float gspeedMax = Settings.Instance.GetFloat("GspeedMAX");
             if (gspeedMax != 0)
