@@ -3210,5 +3210,31 @@ namespace MissionPlanner
         {
             new ConnectionOptions().Show(this);
         }
+
+        private void UCR_UAS_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(
+                    "http://ieee.ee.ucr.edu/uav/");
+            }
+            catch
+            {
+                CustomMessageBox.Show("Link open failed. check your default webpage association");
+            }
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(
+                    "http://ieee.ee.ucr.edu/uav/");
+            }
+            catch
+            {
+                CustomMessageBox.Show("Link open failed. check your default webpage association");
+            }
+        }
     }
 }

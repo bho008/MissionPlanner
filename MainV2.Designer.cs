@@ -39,22 +39,25 @@ namespace MissionPlanner
             this.autoHideToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.fullScreenToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.readonlyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.connectionOptionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuFlightData = new System.Windows.Forms.ToolStripButton();
             this.MenuFlightPlanner = new System.Windows.Forms.ToolStripButton();
             this.MenuInitConfig = new System.Windows.Forms.ToolStripButton();
             this.MenuConfigTune = new System.Windows.Forms.ToolStripButton();
             this.MenuSimulation = new System.Windows.Forms.ToolStripButton();
             this.MenuTerminal = new System.Windows.Forms.ToolStripButton();
-            this.MenuHelp = new System.Windows.Forms.ToolStripButton();
             this.MenuConnect = new System.Windows.Forms.ToolStripButton();
-            this.toolStripConnectionControl = new MissionPlanner.Controls.ToolStripConnectionControl();
+            this.MenuHelp = new System.Windows.Forms.ToolStripButton();
             this.MenuDonate = new System.Windows.Forms.ToolStripMenuItem();
+            this.UCR_UAS = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripConnectionControl = new MissionPlanner.Controls.ToolStripConnectionControl();
             this.menu = new MissionPlanner.Controls.MyButton();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.connectionOptionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.MainMenu.SuspendLayout();
             this.CTX_mainmenu.SuspendLayout();
             this.panel1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
             // MainMenu
@@ -70,10 +73,11 @@ namespace MissionPlanner
             this.MenuConfigTune,
             this.MenuSimulation,
             this.MenuTerminal,
-            this.MenuHelp,
             this.MenuConnect,
-            this.toolStripConnectionControl,
-            this.MenuDonate});
+            this.MenuHelp,
+            this.MenuDonate,
+            this.UCR_UAS,
+            this.toolStripConnectionControl});
             resources.ApplyResources(this.MainMenu, "MainMenu");
             this.MainMenu.Name = "MainMenu";
             this.MainMenu.Stretch = false;
@@ -110,6 +114,12 @@ namespace MissionPlanner
             this.readonlyToolStripMenuItem.Name = "readonlyToolStripMenuItem";
             resources.ApplyResources(this.readonlyToolStripMenuItem, "readonlyToolStripMenuItem");
             this.readonlyToolStripMenuItem.Click += new System.EventHandler(this.readonlyToolStripMenuItem_Click);
+            // 
+            // connectionOptionsToolStripMenuItem
+            // 
+            this.connectionOptionsToolStripMenuItem.Name = "connectionOptionsToolStripMenuItem";
+            resources.ApplyResources(this.connectionOptionsToolStripMenuItem, "connectionOptionsToolStripMenuItem");
+            this.connectionOptionsToolStripMenuItem.Click += new System.EventHandler(this.connectionOptionsToolStripMenuItem_Click);
             // 
             // MenuFlightData
             // 
@@ -162,6 +172,15 @@ namespace MissionPlanner
             this.MenuTerminal.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
             this.MenuTerminal.Click += new System.EventHandler(this.MenuTerminal_Click);
             // 
+            // MenuConnect
+            // 
+            this.MenuConnect.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            resources.ApplyResources(this.MenuConnect, "MenuConnect");
+            this.MenuConnect.ForeColor = System.Drawing.Color.White;
+            this.MenuConnect.Margin = new System.Windows.Forms.Padding(0);
+            this.MenuConnect.Name = "MenuConnect";
+            this.MenuConnect.Click += new System.EventHandler(this.MenuConnect_Click);
+            // 
             // MenuHelp
             // 
             resources.ApplyResources(this.MenuHelp, "MenuHelp");
@@ -171,14 +190,23 @@ namespace MissionPlanner
             this.MenuHelp.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
             this.MenuHelp.Click += new System.EventHandler(this.MenuHelp_Click);
             // 
-            // MenuConnect
+            // MenuDonate
             // 
-            this.MenuConnect.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            resources.ApplyResources(this.MenuConnect, "MenuConnect");
-            this.MenuConnect.ForeColor = System.Drawing.Color.White;
-            this.MenuConnect.Margin = new System.Windows.Forms.Padding(0);
-            this.MenuConnect.Name = "MenuConnect";
-            this.MenuConnect.Click += new System.EventHandler(this.MenuConnect_Click);
+            resources.ApplyResources(this.MenuDonate, "MenuDonate");
+            this.MenuDonate.ForeColor = System.Drawing.Color.White;
+            this.MenuDonate.Image = global::MissionPlanner.Properties.Resources.donate;
+            this.MenuDonate.Name = "MenuDonate";
+            this.MenuDonate.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.MenuDonate.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
+            // 
+            // UCR_UAS
+            // 
+            resources.ApplyResources(this.UCR_UAS, "UCR_UAS");
+            this.UCR_UAS.ForeColor = System.Drawing.Color.White;
+            this.UCR_UAS.Name = "UCR_UAS";
+            this.UCR_UAS.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.UCR_UAS.TextDirection = System.Windows.Forms.ToolStripTextDirection.Horizontal;
+            this.UCR_UAS.Click += new System.EventHandler(this.UCR_UAS_Click);
             // 
             // toolStripConnectionControl
             // 
@@ -190,15 +218,6 @@ namespace MissionPlanner
             this.toolStripConnectionControl.Padding = new System.Windows.Forms.Padding(0, 0, 60, 0);
             resources.ApplyResources(this.toolStripConnectionControl, "toolStripConnectionControl");
             this.toolStripConnectionControl.MouseLeave += new System.EventHandler(this.MainMenu_MouseLeave);
-            // 
-            // MenuDonate
-            // 
-            resources.ApplyResources(this.MenuDonate, "MenuDonate");
-            this.MenuDonate.ForeColor = System.Drawing.Color.White;
-            this.MenuDonate.Image = global::MissionPlanner.Properties.Resources.donate;
-            this.MenuDonate.Name = "MenuDonate";
-            this.MenuDonate.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
-            this.MenuDonate.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
             // 
             // menu
             // 
@@ -215,16 +234,19 @@ namespace MissionPlanner
             this.panel1.Name = "panel1";
             this.panel1.MouseLeave += new System.EventHandler(this.MainMenu_MouseLeave);
             // 
-            // connectionOptionsToolStripMenuItem
+            // pictureBox1
             // 
-            this.connectionOptionsToolStripMenuItem.Name = "connectionOptionsToolStripMenuItem";
-            resources.ApplyResources(this.connectionOptionsToolStripMenuItem, "connectionOptionsToolStripMenuItem");
-            this.connectionOptionsToolStripMenuItem.Click += new System.EventHandler(this.connectionOptionsToolStripMenuItem_Click);
+            this.pictureBox1.Image = global::MissionPlanner.Properties.Resources.ucr_logo_fly;
+            resources.ApplyResources(this.pictureBox1, "pictureBox1");
+            this.pictureBox1.Name = "pictureBox1";
+            this.pictureBox1.TabStop = false;
+            this.pictureBox1.Click += new System.EventHandler(this.pictureBox1_Click);
             // 
             // MainV2
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             resources.ApplyResources(this, "$this");
+            this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.menu);
             this.KeyPreview = true;
@@ -237,6 +259,7 @@ namespace MissionPlanner
             this.CTX_mainmenu.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -262,5 +285,7 @@ namespace MissionPlanner
         private System.Windows.Forms.ToolStripMenuItem fullScreenToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem readonlyToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem connectionOptionsToolStripMenuItem;
+        private System.Windows.Forms.PictureBox pictureBox1;
+        private System.Windows.Forms.ToolStripMenuItem UCR_UAS;
     }
 }

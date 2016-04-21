@@ -73,7 +73,7 @@ namespace MissionPlanner.Utilities
             double m2pixelwidth = Overlay.Control.Width / width;
             double m2pixelheight = Overlay.Control.Height / height;
 
-            GPoint loc = new GPoint((int)(LocalPosition.X - (m2pixelwidth * wprad * 2)), LocalPosition.Y);
+            GPoint loc = new GPoint((int)(LocalPosition.X - (m2pixelwidth * Radius)), LocalPosition.Y);
             // MainMap.FromLatLngToLocal(wpradposition);
 
 
@@ -85,9 +85,12 @@ namespace MissionPlanner.Utilities
             //Console.WriteLine("hello world");
             if (widtharc > 0 && Overlay.Control.Zoom > 3)
             {
-                //g.DrawArc(Pen, new System.Drawing.Rectangle(x, y, widtharc, heightarc), 0, 360);
-
+                g.DrawArc(Pen, new System.Drawing.Rectangle(x, y, widtharc, heightarc), 0, 360);
+                /*
                 g.FillPie(new SolidBrush(Color.FromArgb(75, Color.Blue)), x, y, widtharc, heightarc, 0, 360);
+                g.DrawString(Overlay.Control.FromLocalToLatLng(0, 0).ToString(), new Font("Arial", 18, FontStyle.Regular), Brushes.AliceBlue, new Point(100, -50));
+
+                g.DrawString(Overlay.Control.FromLocalToLatLng(Overlay.Control.Width, 0).ToString(), new Font("Arial", 18, FontStyle.Regular), Brushes.AliceBlue, new Point(100, 0));
                 g.DrawString(width.ToString(), new Font("Arial", 18, FontStyle.Regular), Brushes.AliceBlue, new Point(100, 50));
                 g.DrawString(height.ToString(), new Font("Arial", 18, FontStyle.Regular), Brushes.AliceBlue, new Point(100, 100));
                 g.DrawString(m2pixelwidth.ToString(), new Font("Arial", 18, FontStyle.Regular), Brushes.AliceBlue, new Point(100, 150));
@@ -96,6 +99,9 @@ namespace MissionPlanner.Utilities
                 g.DrawString(y.ToString(), new Font("Arial", 18, FontStyle.Regular), Brushes.AliceBlue, new Point(100, 300));
                 g.DrawString(widtharc.ToString(), new Font("Arial", 18, FontStyle.Regular), Brushes.AliceBlue, new Point(100, 350));
                 g.DrawString(heightarc.ToString(), new Font("Arial", 18, FontStyle.Regular), Brushes.AliceBlue, new Point(100, 400));
+
+                g.DrawEllipse(Pens.Black, LocalPosition.X, LocalPosition.Y, (float)Radius, (float)Radius);
+                */
             }
         }
     }
