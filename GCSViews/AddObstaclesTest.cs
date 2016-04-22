@@ -17,9 +17,19 @@ namespace MissionPlanner.GCSViews
     public partial class AddObstaclesTest : Form
     {
         public double radius = 200.0;
+        bool start = false;
         public AddObstaclesTest()
         {
             InitializeComponent();
+        }
+
+        private void drawObstacles()
+        {
+            //InteropData.InteropData_READER.
+            while (start)
+            {
+                Console.WriteLine("hello");
+            }
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -31,13 +41,25 @@ namespace MissionPlanner.GCSViews
             MarkerObstacle UCR_Obstacle = new MarkerObstacle(p1, radius); //create new MarkerObstacle, Marker Obstacle is in Utilities Folder
             UCR_Obstacle.ToolTipText = "UCR Test Obstacle"; //Give Marker Obstacle a Name
             UCR_Obstacle.ToolTipMode = MarkerTooltipMode.OnMouseOver; //Enable text to show on mouse hover over
-            MissionPlanner.GCSViews.FlightData.ObstaclesOverlayData.Markers.Add(UCR_Obstacle); //add Marker obstacle to Overlay ObstaclesOverlay
-            //MissionPlanner.GCSViews.FlightPlanner.ObstaclesOverlayPlanner.Markers.Add(UCR_Obstacle); //add Marker obstacle to Overlay ObstaclesOverlay
+            MissionPlanner.GCSViews.FlightData.ObstaclesOverlayDataMoving.Markers.Add(UCR_Obstacle); //add Marker obstacle to Overlay ObstaclesOverlay
+                                                                                               //MissionPlanner.GCSViews.FlightPlanner.ObstaclesOverlayPlanner.Markers.Add(UCR_Obstacle); //add Marker obstacle to Overlay ObstaclesOverlay
+
+
         }
 
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
 
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (!start)
+            {
+                start = true;
+                drawObstacles();
+            }
+            else start = false;
         }
     }
 }

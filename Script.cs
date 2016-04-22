@@ -123,7 +123,7 @@ namespace MissionPlanner
         public float GetParam(string param)
         {
             if (MainV2.comPort.MAV.param[param] != null)
-                return (float) MainV2.comPort.MAV.param[param];
+                return (float)MainV2.comPort.MAV.param[param];
 
             return 0.0f;
         }
@@ -155,6 +155,25 @@ namespace MissionPlanner
             IList<Object> radii_moving, IList<Object> lat_moving, IList<Object> lng_moving)
         {
             //Console.WriteLine("updated obstacles");
+
+            //update stationary obstacles, just in case new ones pop up
+            for(int i = 0; i < radii_stationary.Count; i++)
+            {
+                InteropData.InteropData_stationary.pushObjectStationary(i, (double)lat_stationary[i], (double)lng_stationary[i], (double)radii_stationary[i], true);
+            }
+
+            //update moving obstacles
+            for (int i = 0; i < radii_moving.Count; i++)
+            {
+                //Console.Write(radii_stationary.ElementAt(i) + " ");
+                //ObstacleObject obs = new ObstacleObject((double)lat_moving.ElementAt(i), (double)lng_moving.ElementAt(i), (double)radii_moving.ElementAt(i), false);
+                //Console.WriteLine("begin write data");
+                InteropData.InteropData_moving.pushObjectMoving(i, (double)lat_moving.ElementAt(i), (double)lng_moving.ElementAt(i), (double)radii_moving.ElementAt(i), false);
+                //Console.WriteLine(i + "\t" + obs.x + "\t" + obs.y + "\t" + obs.radius);
+                //Console.WriteLine("pushed data");
+                //obs = null;
+            }
+            //Console.WriteLine();
             return true;
         }
 

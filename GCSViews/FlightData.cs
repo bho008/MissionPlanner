@@ -76,7 +76,8 @@ namespace MissionPlanner.GCSViews
         internal static GMapOverlay rallypointoverlay;
         internal static GMapOverlay photosoverlay;
         internal static GMapOverlay poioverlay = new GMapOverlay("POI"); // poi layer
-        internal static GMapOverlay ObstaclesOverlayData; // this is where we will add our obstacles
+        internal static GMapOverlay ObstaclesOverlayDataMoving; // this is where we will add our moving obstacles
+        internal static GMapOverlay ObstaclesOverlayDataStationary;
 
         List<TabPage> TabListOriginal = new List<TabPage>();
 
@@ -323,8 +324,11 @@ namespace MissionPlanner.GCSViews
 
             gMapControl1.Overlays.Add(poioverlay);
 
-            ObstaclesOverlayData = new GMapOverlay("obstacle overlay");
-            gMapControl1.Overlays.Add(ObstaclesOverlayData);
+            ObstaclesOverlayDataMoving = new GMapOverlay("obstacles moving overlay");
+            gMapControl1.Overlays.Add(ObstaclesOverlayDataMoving);
+
+            ObstaclesOverlayDataStationary = new GMapOverlay("obstacles stationary overlay");
+            gMapControl1.Overlays.Add(ObstaclesOverlayDataStationary);
 
             float gspeedMax = Settings.Instance.GetFloat("GspeedMAX");
             if (gspeedMax != 0)

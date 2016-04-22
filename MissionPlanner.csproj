@@ -685,6 +685,7 @@
     <Compile Include="GeoRef\SingleLocation.cs" />
     <Compile Include="GeoRef\VehicleLocation.cs" />
     <Compile Include="HIL\QuadCopter.cs" />
+    <Compile Include="InteropData.cs" />
     <Compile Include="Joystick\Joy_Do_Repeat_Servo.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -775,6 +776,7 @@
     <Compile Include="Log\MatLab.cs" />
     <Compile Include="Magfitrotation.cs" />
     <Compile Include="Models\BattMonitor.cs" />
+    <Compile Include="ObstacleObject.cs" />
     <Compile Include="OpenGLtest2.cs">
       <SubType>UserControl</SubType>
     </Compile>
