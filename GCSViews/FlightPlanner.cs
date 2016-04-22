@@ -502,8 +502,8 @@ namespace MissionPlanner.GCSViews
 
             objectsoverlay.Markers.Clear();
 
-            ObstaclesOverlay = new GMapOverlay("obstacles");
-            MainMap.Overlays.Add(ObstaclesOverlay);
+            ObstaclesOverlayPlanner = new GMapOverlay("obstacles");
+            MainMap.Overlays.Add(ObstaclesOverlayPlanner);
 
             // set current marker
             currentMarker = new GMarkerGoogle(MainMap.Position, GMarkerGoogleType.red);
@@ -2756,7 +2756,7 @@ namespace MissionPlanner.GCSViews
         public static GMapOverlay polygonsoverlay; // where the track is drawn
         public static GMapOverlay airportsoverlay;
         public static GMapOverlay poioverlay = new GMapOverlay("POI"); // poi layer
-        public static GMapOverlay ObstaclesOverlay; // this is where we will add our obstacles
+        public static GMapOverlay ObstaclesOverlayPlanner; // this is where we will add our obstacles
 
         GMapOverlay drawnpolygonsoverlay;
         GMapOverlay kmlpolygonsoverlay;

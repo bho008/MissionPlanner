@@ -148,6 +148,16 @@ namespace MissionPlanner
             return true;
         }
 
+        //Script.UpdateObstacles(async_radii_stationary, async_lat_stationary, async_lng_stationary, 
+        //                          async_radii_moving, async_lat_moving, async_lng_moving)
+
+        public bool UpdateObstacles(IList<Object> radii_stationary, IList<Object> lat_stationary, IList<Object> lng_stationary,
+            IList<Object> radii_moving, IList<Object> lat_moving, IList<Object> lng_moving)
+        {
+            //Console.WriteLine("updated obstacles");
+            return true;
+        }
+
         public bool SendRC(int channel, ushort pwm, bool sendnow)
         {
             switch (channel)

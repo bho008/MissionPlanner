@@ -31,8 +31,8 @@ namespace MissionPlanner.GCSViews
             MarkerObstacle UCR_Obstacle = new MarkerObstacle(p1, radius); //create new MarkerObstacle, Marker Obstacle is in Utilities Folder
             UCR_Obstacle.ToolTipText = "UCR Test Obstacle"; //Give Marker Obstacle a Name
             UCR_Obstacle.ToolTipMode = MarkerTooltipMode.OnMouseOver; //Enable text to show on mouse hover over
-            MissionPlanner.GCSViews.FlightData.ObstaclesOverlay.Markers.Add(UCR_Obstacle); //add Marker obstacle to Overlay ObstaclesOverlay
-            MissionPlanner.GCSViews.FlightPlanner.ObstaclesOverlay.Markers.Add(UCR_Obstacle); //add Marker obstacle to Overlay ObstaclesOverlay
+            MissionPlanner.GCSViews.FlightData.ObstaclesOverlayData.Markers.Add(UCR_Obstacle); //add Marker obstacle to Overlay ObstaclesOverlay
+            //MissionPlanner.GCSViews.FlightPlanner.ObstaclesOverlayPlanner.Markers.Add(UCR_Obstacle); //add Marker obstacle to Overlay ObstaclesOverlay
         }
 
         private void textBox1_TextChanged(object sender, EventArgs e)

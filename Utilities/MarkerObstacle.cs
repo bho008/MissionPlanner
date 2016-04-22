@@ -83,11 +83,12 @@ namespace MissionPlanner.Utilities
             int heightarc = (int)Math.Abs(loc.X - LocalPosition.X);
             //Console.WriteLine("width {0}, height {1}, m2pixelwidth{2}, m2pixelheight{3}, x{4}, y{5}, widtharc{6}, heightarc{7}", width, height, m2pixelwidth, m2pixelheight, x, y, widtharc, heightarc);
             //Console.WriteLine("hello world");
-            if (widtharc > 0 && Overlay.Control.Zoom > 3)
+            if (widtharc > 0)// && Overlay.Control.Zoom > 3)
             {
                 g.DrawArc(Pen, new System.Drawing.Rectangle(x, y, widtharc, heightarc), 0, 360);
-                /*
+                
                 g.FillPie(new SolidBrush(Color.FromArgb(75, Color.Blue)), x, y, widtharc, heightarc, 0, 360);
+                /*
                 g.DrawString(Overlay.Control.FromLocalToLatLng(0, 0).ToString(), new Font("Arial", 18, FontStyle.Regular), Brushes.AliceBlue, new Point(100, -50));
 
                 g.DrawString(Overlay.Control.FromLocalToLatLng(Overlay.Control.Width, 0).ToString(), new Font("Arial", 18, FontStyle.Regular), Brushes.AliceBlue, new Point(100, 0));
