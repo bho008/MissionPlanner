@@ -13,6 +13,7 @@ namespace MissionPlanner
         public double radius = 0.0;
         public bool stationary = true;
         public int id = 0;
+        public double height = 0.0;
         public static ObstacleObject obs;
         public ObstacleObject()
         {
@@ -22,12 +23,13 @@ namespace MissionPlanner
             radius = 0.0;
             stationary = true;
         }
-        public ObstacleObject(int i, double lat, double lng, double rad, bool sta)
+        public ObstacleObject(int i, double lat, double lng, double rad, double h, bool sta)
         {
             id = i;
             x = lat;
             y = lng;
             radius = rad;
+            height = h;
             stationary = sta;
         }
 
@@ -42,6 +44,10 @@ namespace MissionPlanner
         public double getRadius()
         {
             return radius;
+        }
+        public double getHeight()
+        {
+            return height;
         }
     }
 }

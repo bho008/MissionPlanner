@@ -28,7 +28,7 @@ namespace MissionPlanner
             //InteropData_READER = null;
         }
 
-        public void pushObjectStationary(int id, double x, double y, double r, bool stationary)
+        public void pushObjectStationary(int id, double x, double y, double r, double h, bool stationary)
         {
             if (stationary && printStationary)
             {
@@ -42,12 +42,12 @@ namespace MissionPlanner
                     printStationary = false;
                     //Obstacle_list_stationary.Clear();
                 }
-                ObstacleObject newObj = new ObstacleObject(id, x, y, r, stationary);
+                ObstacleObject newObj = new ObstacleObject(id, x, y, r, h, stationary);
                 Obstacle_list_stationary.Add(newObj);
             }
         }
 
-        public void pushObjectMoving(int id, double x, double y, double r, bool stationary)
+        public void pushObjectMoving(int id, double x, double y, double r, double h, bool stationary)
         {
             if (id == 0 && Obstacle_list_moving.Count > 0)
             {
@@ -58,7 +58,7 @@ namespace MissionPlanner
                 printObjects();
                 Obstacle_list_moving.Clear();
             }
-            ObstacleObject newObj = new ObstacleObject(id, x, y, r, stationary);
+            ObstacleObject newObj = new ObstacleObject(id, x, y, r, h, stationary);
             Obstacle_list_moving.Add(newObj);
         }
 
@@ -67,7 +67,7 @@ namespace MissionPlanner
             MissionPlanner.GCSViews.FlightData.ObstaclesOverlayDataMoving.Clear();
             for (int i = 0; i < Obstacle_list_reader.Count; i++)
             {
-                Console.WriteLine("x: " + Obstacle_list_reader[i].x + "\ty: " + Obstacle_list_reader[i].y );
+                Console.WriteLine("x: " + Obstacle_list_reader[i].x + "\ty: " + Obstacle_list_reader[i].y + " h: " + Obstacle_list_reader[i].height);
                 ObstacleObject obs = Obstacle_list_reader.ElementAt(i);
                 PointLatLng p1 = new PointLatLng(obs.getX(), obs.getY()); // create latitude longitude object 
                 MarkerObstacle UCR_Obstacle = new MarkerObstacle(p1, obs.getRadius()); //create new MarkerObstacle, Marker Obstacle is in Utilities Folder

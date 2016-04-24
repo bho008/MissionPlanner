@@ -152,14 +152,15 @@ namespace MissionPlanner
         //                          async_radii_moving, async_lat_moving, async_lng_moving)
 
         public bool UpdateObstacles(IList<Object> radii_stationary, IList<Object> lat_stationary, IList<Object> lng_stationary,
-            IList<Object> radii_moving, IList<Object> lat_moving, IList<Object> lng_moving)
+            IList<Object> h_stationary,
+            IList<Object> radii_moving, IList<Object> lat_moving, IList<Object> lng_moving, IList<Object> h_moving)
         {
             //Console.WriteLine("updated obstacles");
 
             //update stationary obstacles, just in case new ones pop up
-            for(int i = 0; i < radii_stationary.Count; i++)
+            for (int i = 0; i < radii_stationary.Count; i++)
             {
-                InteropData.InteropData_stationary.pushObjectStationary(i, (double)lat_stationary[i], (double)lng_stationary[i], (double)radii_stationary[i], true);
+                InteropData.InteropData_stationary.pushObjectStationary(i, (double)lat_stationary[i], (double)lng_stationary[i], (double)radii_stationary[i], (double)h_stationary[i], true);
             }
 
             //update moving obstacles
@@ -168,7 +169,7 @@ namespace MissionPlanner
                 //Console.Write(radii_stationary.ElementAt(i) + " ");
                 //ObstacleObject obs = new ObstacleObject((double)lat_moving.ElementAt(i), (double)lng_moving.ElementAt(i), (double)radii_moving.ElementAt(i), false);
                 //Console.WriteLine("begin write data");
-                InteropData.InteropData_moving.pushObjectMoving(i, (double)lat_moving.ElementAt(i), (double)lng_moving.ElementAt(i), (double)radii_moving.ElementAt(i), false);
+                InteropData.InteropData_moving.pushObjectMoving(i, (double)lat_moving.ElementAt(i), (double)lng_moving.ElementAt(i), (double)radii_moving.ElementAt(i), (double)h_moving[i], false);
                 //Console.WriteLine(i + "\t" + obs.x + "\t" + obs.y + "\t" + obs.radius);
                 //Console.WriteLine("pushed data");
                 //obs = null;
