@@ -73,7 +73,7 @@ namespace MissionPlanner.Utilities
             double m2pixelwidth = Overlay.Control.Width / width;
             double m2pixelheight = Overlay.Control.Height / height;
 
-            GPoint loc = new GPoint((int)(LocalPosition.X - (m2pixelwidth * Radius)), LocalPosition.Y);
+            GPoint loc = new GPoint((int)(LocalPosition.X - (m2pixelwidth * Radius * 2)), LocalPosition.Y);
             // MainMap.FromLatLngToLocal(wpradposition);
 
 

@@ -157,10 +157,11 @@ namespace MissionPlanner
         {
             //Console.WriteLine("updated obstacles");
 
+            //radii is in feet. convert to meters
             //update stationary obstacles, just in case new ones pop up
             for (int i = 0; i < radii_stationary.Count; i++)
             {
-                InteropData.InteropData_stationary.pushObjectStationary(i, (double)lat_stationary[i], (double)lng_stationary[i], (double)radii_stationary[i], (double)h_stationary[i], true);
+                InteropData.InteropData_stationary.pushObjectStationary(i, (double)lat_stationary[i], (double)lng_stationary[i], (double)radii_stationary[i]* 0.3048, (double)h_stationary[i], true);
             }
 
             //update moving obstacles
@@ -169,7 +170,7 @@ namespace MissionPlanner
                 //Console.Write(radii_stationary.ElementAt(i) + " ");
                 //ObstacleObject obs = new ObstacleObject((double)lat_moving.ElementAt(i), (double)lng_moving.ElementAt(i), (double)radii_moving.ElementAt(i), false);
                 //Console.WriteLine("begin write data");
-                InteropData.InteropData_moving.pushObjectMoving(i, (double)lat_moving.ElementAt(i), (double)lng_moving.ElementAt(i), (double)radii_moving.ElementAt(i), (double)h_moving[i], false);
+                InteropData.InteropData_moving.pushObjectMoving(i, (double)lat_moving.ElementAt(i), (double)lng_moving.ElementAt(i), (double)radii_moving.ElementAt(i)* 0.3048, (double)h_moving[i], false);
                 //Console.WriteLine(i + "\t" + obs.x + "\t" + obs.y + "\t" + obs.radius);
                 //Console.WriteLine("pushed data");
                 //obs = null;
