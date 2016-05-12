@@ -777,6 +777,7 @@
     <Compile Include="Magfitrotation.cs" />
     <Compile Include="Models\BattMonitor.cs" />
     <Compile Include="ObstacleObject.cs" />
+    <Compile Include="ObstacleStruct.cs" />
     <Compile Include="OpenGLtest2.cs">
       <SubType>UserControl</SubType>
     </Compile>

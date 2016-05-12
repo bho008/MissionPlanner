@@ -50,27 +50,6 @@ namespace MissionPlanner
             }
             else
                 OutputWriter = null;
-
-            /*
-            object thisBoxed = MainV2.comPort.MAV.cs;
-            Type test = thisBoxed.GetType();
-
-            foreach (var field in test.GetProperties())
-            {
-                // field.Name has the field's name.
-                object fieldValue;
-                try
-                {
-                    fieldValue = field.GetValue(thisBoxed, null); // Get value
-                }
-                catch { continue; }
-
-                // Get the TypeCode enumeration. Multiple types get mapped to a common typecode.
-                TypeCode typeCode = Type.GetTypeCode(fieldValue.GetType());
-
-                items.Add(field.Name);
-            }
-             */
         }
 
         public object mavlink_connection(string device, int baud = 115200, int source_system = 255,
