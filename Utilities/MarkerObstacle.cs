@@ -23,6 +23,14 @@ namespace MissionPlanner.Utilities
             }
         }
 
+        public Color drawColor
+        {
+            get { return Pen.Color; }
+            set
+            {
+                Pen.Color = value;
+            }
+        }
         Color? initcolor = null;
 
         public GMapMarker InnerMarker;
@@ -37,10 +45,10 @@ namespace MissionPlanner.Utilities
             else
                 Color = Color.White;
         }
-        public MarkerObstacle(PointLatLng p, double radius) : base(p)
+        public MarkerObstacle(PointLatLng p, double radius, Color color) : base(p)
         {
             Pen.DashStyle = DashStyle.Dash;
-
+            drawColor = color;
             // do not forget set Size of the marker
             // if so, you shall have no event on it ;}
             Size = new System.Drawing.Size(50, 50);
@@ -87,7 +95,7 @@ namespace MissionPlanner.Utilities
             {
                 g.DrawArc(Pen, new System.Drawing.Rectangle(x, y, widtharc, heightarc), 0, 360);
                 
-                g.FillPie(new SolidBrush(Color.FromArgb(75, Color.Blue)), x, y, widtharc, heightarc, 0, 360);
+                g.FillPie(new SolidBrush(Color.FromArgb(75, drawColor)), x, y, widtharc, heightarc, 0, 360);
                 /*
                 g.DrawString(Overlay.Control.FromLocalToLatLng(0, 0).ToString(), new Font("Arial", 18, FontStyle.Regular), Brushes.AliceBlue, new Point(100, -50));
 

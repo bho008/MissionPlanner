@@ -43,7 +43,7 @@ namespace MissionPlanner.GCSViews
             double.TryParse(textBox1.Text, out radius);
             Console.WriteLine("radius: " + radius);
             PointLatLng p1 = new PointLatLng(33.9737, -117.3281); // create latitude longitude object 
-            MarkerObstacle UCR_Obstacle = new MarkerObstacle(p1, radius); //create new MarkerObstacle, Marker Obstacle is in Utilities Folder
+            MarkerObstacle UCR_Obstacle = new MarkerObstacle(p1, radius, Color.Blue); //create new MarkerObstacle, Marker Obstacle is in Utilities Folder
             UCR_Obstacle.ToolTipText = "UCR Test Obstacle"; //Give Marker Obstacle a Name
             UCR_Obstacle.ToolTipMode = MarkerTooltipMode.OnMouseOver; //Enable text to show on mouse hover over
             MissionPlanner.GCSViews.FlightData.ObstaclesOverlayDataMoving.Markers.Add(UCR_Obstacle); //add Marker obstacle to Overlay ObstaclesOverlay
@@ -100,7 +100,7 @@ namespace MissionPlanner.GCSViews
             int a = 0;
             //testWP.id = (byte)Commands.Rows[a].Cells[Command.Index].Tag;
             
-            testWP.Set(33.7789, -117.193504, 110 * 100, (byte)MAVLink.MAV_CMD.WAYPOINT); //altitude in cm
+            testWP.Set(33.7789, -117.193504, 100, (byte)MAVLink.MAV_CMD.WAYPOINT); //altitude in m
             /*
             var ans = MainV2.comPort.setWP(testWP, (ushort)1, frame, 0, 1, use_int);
             Console.WriteLine(ans.ToString());

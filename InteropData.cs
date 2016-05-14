@@ -24,10 +24,18 @@ namespace MissionPlanner
         private bool printStationary = true;
         public double shortestDistanceToObs = 99999;
 
-        int bufferDistance = 100; // buffer distance of 100ft
+        double bufferDistance = 250; // buffer distance of 100ft
+        double currBearing = 0.0;
+        double currSpeed = 0.0;
+        double currAlt = 0.0;
+        double currLat = 0.0;
+        double currLng = 0.0;
+
         public static bool breached = false;
         public static int breachedId = -1;
         public static bool enableSDA = false;
+        double R = 6378137;
+
         public InteropData()
         {
             //Obstacle_list = null;
@@ -107,7 +115,7 @@ namespace MissionPlanner
                 ObstacleStruct obs = Obstacle_list_reader.ElementAt(i);
 
                 PointLatLng p1 = new PointLatLng(obs.x, obs.y); // create latitude longitude object 
-                MarkerObstacle UCR_Obstacle = new MarkerObstacle(p1, obs.radius); //create new MarkerObstacle, Marker Obstacle is in Utilities Folder
+                MarkerObstacle UCR_Obstacle = new MarkerObstacle(p1, obs.radius, Color.Beige); //create new MarkerObstacle, Marker Obstacle is in Utilities Folder
                 UCR_Obstacle.ToolTipText = "UCR Test Obstacle"; //Give Marker Obstacle a Name
                 UCR_Obstacle.ToolTipMode = MarkerTooltipMode.OnMouseOver; //Enable text to show on mouse hover over  
                 drawLines(p1, MainV2.comPort.MAV.cs.Location);
@@ -144,16 +152,43 @@ namespace MissionPlanner
                 if (lineStat.Distance * 3280.84 - obs.radius < bufferDistance)
                 {
 
-                    Console.Write(lineStat.Distance * 3280.84 - obs.radius + "\t");
+                    //Console.WriteLine(lineStat.Distance * 3280.84 - obs.radius + "\t");
 
                     breached = true;
                     breachedId = i;
+                    currBearing = MainV2.comPort.MAV.cs.nav_bearing;
+                    currLat = mavPos.Lat;
+                    currLng = mavPos.Lng;
+                    currAlt = MainV2.comPort.MAV.cs.alt/ 3.28084;
+                    Console.WriteLine(currAlt);
+                    if (enableSDA)
+                    {
+                        Locationwp testWP = new Locationwp(); //initialize waypoint to nav to
+                        testWP.id = (byte)MAVLink.MAV_CMD.WAYPOINT; //set testWP id to WAYPOINT
+                        if ((currBearing > 0 && currBearing < 90) || (currBearing > 270 && currLng < point.Lng))
+                        {
+
+                            //new_latitude  = latitude  + (dy / r_earth) * (180 / pi);
+                            //new_longitude = longitude + (dx / r_earth) * (180 / pi) / cos(latitude * pi / 180);
+                            testWP.lat = point.Lat;
+                            testWP.lng = point.Lng + (bufferDistance / R) * (180 / Math.PI) / Math.Cos(point.Lat * Math.PI / 180);
+                            testWP.alt = (float)currAlt;
+                        }
+                        else if ((currBearing > 180 && currBearing <=360) || (currBearing < 90 && currLng > point.Lng))
+                        {
+                            testWP.lat = point.Lat;
+                            testWP.lng = point.Lng - (bufferDistance / R) * (180 / Math.PI) / Math.Cos(point.Lat * Math.PI / 180);
+                            testWP.alt = (float)currAlt;
+                        }
+
+                        MainV2.comPort.setGuidedModeWP(testWP);
+
+
+                    }
                 }
 
                 MissionPlanner.GCSViews.FlightData.interopPolygonOverlay.Polygons.Add(lineStat);
             }
-
-            Console.WriteLine();
         }
 
         public void drawLines(PointLatLng point, PointLatLng mavPos)
