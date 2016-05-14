@@ -34,6 +34,7 @@
             this.buttonSDAEnable = new System.Windows.Forms.Button();
             this.testUploadWP = new System.Windows.Forms.Button();
             this.wpUploadStatus = new System.Windows.Forms.TextBox();
+            this.drawBufferCheck = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // button1
@@ -92,11 +93,25 @@
             this.wpUploadStatus.Size = new System.Drawing.Size(100, 20);
             this.wpUploadStatus.TabIndex = 5;
             // 
+            // drawBufferCheck
+            // 
+            this.drawBufferCheck.AutoSize = true;
+            this.drawBufferCheck.Checked = true;
+            this.drawBufferCheck.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.drawBufferCheck.Location = new System.Drawing.Point(190, 232);
+            this.drawBufferCheck.Name = "drawBufferCheck";
+            this.drawBufferCheck.Size = new System.Drawing.Size(82, 17);
+            this.drawBufferCheck.TabIndex = 6;
+            this.drawBufferCheck.Text = "Draw Buffer";
+            this.drawBufferCheck.UseVisualStyleBackColor = true;
+            this.drawBufferCheck.CheckedChanged += new System.EventHandler(this.drawBufferCheck_CheckedChanged);
+            // 
             // AddObstaclesTest
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.drawBufferCheck);
             this.Controls.Add(this.wpUploadStatus);
             this.Controls.Add(this.testUploadWP);
             this.Controls.Add(this.buttonSDAEnable);
@@ -118,5 +133,6 @@
         private System.Windows.Forms.Button buttonSDAEnable;
         private System.Windows.Forms.Button testUploadWP;
         private System.Windows.Forms.TextBox wpUploadStatus;
+        private System.Windows.Forms.CheckBox drawBufferCheck;
     }
 }

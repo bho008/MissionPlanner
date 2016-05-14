@@ -21,8 +21,10 @@ namespace MissionPlanner
         static List<ObstacleStruct> Obstacle_list_stationary = new List<ObstacleStruct>();
         static List<ObstacleStruct> Obstacle_list_reader = new List<ObstacleStruct>();
         static List<ObstacleStruct> Obstacle_list_stationary_final = new List<ObstacleStruct>();
-        private bool printStationary = true;
+        public static bool printStationary = true;
         public double shortestDistanceToObs = 99999;
+
+        public static bool drawBuffer = true;
 
         double bufferDistance = 250; // buffer distance of 100ft
         double currBearing = 0.0;
@@ -64,6 +66,7 @@ namespace MissionPlanner
                     }
                     if (printStationary)
                     {
+                        MissionPlanner.GCSViews.FlightData.ObstaclesOverlayDataStationary.Markers.Clear();
                         printObjects();
                         printStationary = false;
                         //Obstacle_list_stationary_final = new List<ObstacleStruct>(Obstacle_list_reader);
@@ -115,16 +118,29 @@ namespace MissionPlanner
                 ObstacleStruct obs = Obstacle_list_reader.ElementAt(i);
 
                 PointLatLng p1 = new PointLatLng(obs.x, obs.y); // create latitude longitude object 
-                MarkerObstacle UCR_Obstacle = new MarkerObstacle(p1, obs.radius, Color.Beige); //create new MarkerObstacle, Marker Obstacle is in Utilities Folder
+                MarkerObstacle UCR_Obstacle = new MarkerObstacle(p1, obs.radius, Color.Green); //create new MarkerObstacle, Marker Obstacle is in Utilities Folder
+                MarkerObstacle UCR_Obstacle_buffer = new MarkerObstacle(p1, (obs.radius + bufferDistance / 2) / 2, Color.Beige);
                 UCR_Obstacle.ToolTipText = "UCR Test Obstacle"; //Give Marker Obstacle a Name
                 UCR_Obstacle.ToolTipMode = MarkerTooltipMode.OnMouseOver; //Enable text to show on mouse hover over  
                 drawLines(p1, MainV2.comPort.MAV.cs.Location);
                 drawLinesStationaryObs(MainV2.comPort.MAV.cs.Location);
                 if (obs.stationary)
                 {
+                    UCR_Obstacle.Color = Color.Blue;
+                    if (drawBuffer)
+                    {
+                        MissionPlanner.GCSViews.FlightData.ObstaclesOverlayDataStationary.Markers.Add(UCR_Obstacle_buffer);
+                    }
                     MissionPlanner.GCSViews.FlightData.ObstaclesOverlayDataStationary.Markers.Add(UCR_Obstacle);
+
                 }
+                if (drawBuffer)
+                {
+                    MissionPlanner.GCSViews.FlightData.ObstaclesOverlayDataMoving.Markers.Add(UCR_Obstacle_buffer);
+                }
+                UCR_Obstacle.Color = Color.Blue;
                 MissionPlanner.GCSViews.FlightData.ObstaclesOverlayDataMoving.Markers.Add(UCR_Obstacle);
+
             }
             Obstacle_list_reader.Clear();
         }
@@ -159,7 +175,7 @@ namespace MissionPlanner
                     currBearing = MainV2.comPort.MAV.cs.nav_bearing;
                     currLat = mavPos.Lat;
                     currLng = mavPos.Lng;
-                    currAlt = MainV2.comPort.MAV.cs.alt/ 3.28084;
+                    currAlt = MainV2.comPort.MAV.cs.alt / 3.28084;
                     Console.WriteLine(currAlt);
                     if (enableSDA)
                     {
@@ -174,7 +190,7 @@ namespace MissionPlanner
                             testWP.lng = point.Lng + (bufferDistance / R) * (180 / Math.PI) / Math.Cos(point.Lat * Math.PI / 180);
                             testWP.alt = (float)currAlt;
                         }
-                        else if ((currBearing > 180 && currBearing <=360) || (currBearing < 90 && currLng > point.Lng))
+                        else if ((currBearing > 180 && currBearing <= 360) || (currBearing < 90 && currLng > point.Lng))
                         {
                             testWP.lat = point.Lat;
                             testWP.lng = point.Lng - (bufferDistance / R) * (180 / Math.PI) / Math.Cos(point.Lat * Math.PI / 180);

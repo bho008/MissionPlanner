@@ -114,5 +114,21 @@ namespace MissionPlanner.GCSViews
             MainV2.comPort.giveComport = false;
 
         }
+
+        private void drawBufferCheck_CheckedChanged(object sender, EventArgs e)
+        {
+            if (InteropData.drawBuffer)
+            {
+                InteropData.drawBuffer = false;
+                InteropData.printStationary = true;
+
+            }
+            else
+            {
+                InteropData.drawBuffer = true;
+                InteropData.printStationary = true;
+
+            }
+        }
     }
 }
