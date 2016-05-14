@@ -16,6 +16,11 @@ namespace MissionPlanner.GCSViews
 {
     public partial class AddObstaclesTest : Form
     {
+        private System.Windows.Forms.DataGridView Commands;
+        private System.Windows.Forms.DataGridViewComboBoxColumn Command;
+
+
+
         public double radius = 200.0;
         bool start = false;
         public AddObstaclesTest()
@@ -60,6 +65,54 @@ namespace MissionPlanner.GCSViews
                 drawObstacles();
             }
             else start = false;
+        }
+
+        private void buttonSDAEnable_Click(object sender, EventArgs e)
+        {
+            if (!InteropData.enableSDA)
+            {
+                InteropData.enableSDA = true;
+                buttonSDAEnable.BackColor = Color.Green;
+                Console.WriteLine("SDA Enabled");
+            }
+            else
+            {
+                InteropData.enableSDA = false;
+                buttonSDAEnable.BackColor = Color.Red;
+                Console.WriteLine("SDA Disabled");
+            }
+        }
+
+        private void testUploadWP_Click(object sender, EventArgs e)
+        {
+            //MainV2.comPort.MAV.
+            MAVLinkInterface port = MainV2.comPort;
+            MainV2.comPort.giveComport = true;
+
+            MAVLink.MAV_FRAME frame = MAVLink.MAV_FRAME.GLOBAL_RELATIVE_ALT;
+            bool use_int = (MainV2.comPort.MAV.cs.capabilities & MAVLink.MAV_PROTOCOL_CAPABILITY.MISSION_INT) > 0;
+            if (use_int)
+            {
+                Console.WriteLine("use ints");
+            }
+            Locationwp testWP = new Locationwp();
+            testWP.id = (byte)MAVLink.MAV_CMD.WAYPOINT;
+            int a = 0;
+            //testWP.id = (byte)Commands.Rows[a].Cells[Command.Index].Tag;
+            
+            testWP.Set(33.7789, -117.193504, 110 * 100, (byte)MAVLink.MAV_CMD.WAYPOINT); //altitude in cm
+            /*
+            var ans = MainV2.comPort.setWP(testWP, (ushort)1, frame, 0, 1, use_int);
+            Console.WriteLine(ans.ToString());
+            if (ans == MAVLink.MAV_MISSION_RESULT.MAV_MISSION_ACCEPTED)
+            {
+                wpUploadStatus.Text = "wp accepted";
+            }
+            */
+            MainV2.comPort.setGuidedModeWP(testWP);
+
+            MainV2.comPort.giveComport = false;
+
         }
     }
 }

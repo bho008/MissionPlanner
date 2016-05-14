@@ -1128,6 +1128,13 @@ namespace MissionPlanner
                             dowindcalc();
                     }
 
+                    if (InteropData.breached)
+                    {
+                        messageHigh = Strings.ObstacleBreach;
+                        messageHighTime = DateTime.Now;
+
+                    }
+
                     // re-request streams
                     if (!(lastdata.AddSeconds(8) > DateTime.Now) && mavinterface.BaseStream.IsOpen)
                     {

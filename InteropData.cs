@@ -22,6 +22,12 @@ namespace MissionPlanner
         static List<ObstacleStruct> Obstacle_list_reader = new List<ObstacleStruct>();
         static List<ObstacleStruct> Obstacle_list_stationary_final = new List<ObstacleStruct>();
         private bool printStationary = true;
+        public double shortestDistanceToObs = 99999;
+
+        int bufferDistance = 100; // buffer distance of 100ft
+        public static bool breached = false;
+        public static int breachedId = -1;
+        public static bool enableSDA = false;
         public InteropData()
         {
             //Obstacle_list = null;
@@ -34,7 +40,7 @@ namespace MissionPlanner
         {
             if (stationary && printStationary)
             {
-                if (id == 0 && Obstacle_list_stationary.Count > 0 )
+                if (id == 0 && Obstacle_list_stationary.Count > 0)
                 {
                     Obstacle_list_stationary_final = new List<ObstacleStruct>();
                     for (int i = 0; i < Obstacle_list_stationary.Count; i++)
@@ -43,10 +49,10 @@ namespace MissionPlanner
                         //Obstacle_list_stationary_final.Add(Obstacle_list_stationary[i]);
                         //Obstacle_list_stationary_final = new List<ObstacleStruct>(Obstacle_list_reader);
 
-                        Obstacle_list_stationary_final.Add( (ObstacleStruct)(Obstacle_list_reader[i].Clone()));
-                        
+                        Obstacle_list_stationary_final.Add((ObstacleStruct)(Obstacle_list_reader[i].Clone()));
 
-                        Console.WriteLine(Obstacle_list_stationary_final[i].x);
+
+                        //Console.WriteLine(Obstacle_list_stationary_final[i].x);
                     }
                     if (printStationary)
                     {
@@ -93,7 +99,6 @@ namespace MissionPlanner
         public void printObjects()
         {
             MissionPlanner.GCSViews.FlightData.ObstaclesOverlayDataMoving.Clear();
-            MissionPlanner.GCSViews.FlightData.InteropFun.Polygons.Clear();
 
             for (int i = 0; i < Obstacle_list_reader.Count; i++)
             {
@@ -118,8 +123,10 @@ namespace MissionPlanner
 
         public void drawLinesStationaryObs(PointLatLng mavPos)
         {
-            Console.WriteLine("obstacle stationary list count: " + Obstacle_list_stationary_final.Count);
-
+            //Console.WriteLine("obstacle stationary list count: " + Obstacle_list_stationary_final.Count);
+            MissionPlanner.GCSViews.FlightData.interopPolygonOverlay.Polygons.Clear();
+            breachedId = -1;
+            breached = false;
             for (int i = 0; i < Obstacle_list_stationary_final.Count; i++)
             {
                 //ObstacleObject obs = Obstacle_list_stationary_final.ElementAt(i);
@@ -133,14 +140,25 @@ namespace MissionPlanner
                 polygonPoints.Add(mavPos);
 
                 GMapPolygon lineStat = new GMapPolygon(polygonPoints, "dist from obs");
-                lineStat.Stroke.Color = Color.Blue;
+                //Console.Write(lineStat.Distance * 3280.84 + "\t"); //distance calculated in feet
+                if (lineStat.Distance * 3280.84 - obs.radius < bufferDistance)
+                {
 
-                MissionPlanner.GCSViews.FlightData.InteropFun.Polygons.Add(lineStat);
+                    Console.Write(lineStat.Distance * 3280.84 - obs.radius + "\t");
+
+                    breached = true;
+                    breachedId = i;
+                }
+
+                MissionPlanner.GCSViews.FlightData.interopPolygonOverlay.Polygons.Add(lineStat);
             }
+
+            Console.WriteLine();
         }
 
         public void drawLines(PointLatLng point, PointLatLng mavPos)
         {
+            MissionPlanner.GCSViews.FlightData.InteropFun.Polygons.Clear();
             List<PointLatLng> polygonPoints = new List<PointLatLng>();
             polygonPoints.Add(point);
             polygonPoints.Add(mavPos);

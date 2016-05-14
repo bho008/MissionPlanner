@@ -2721,6 +2721,12 @@ namespace MissionPlanner
                 frm.Show();
                 return true;
             }
+            if(keyData == (Keys.Control | Keys.R)) //ucr custom form
+            {
+                Form AddObstacleTest = new GCSViews.AddObstaclesTest();
+                AddObstacleTest.Show();
+                return true;
+            }
             /*if (keyData == (Keys.Control | Keys.S)) // screenshot
             {
                 ScreenShot();

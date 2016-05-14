@@ -985,6 +985,15 @@ namespace MissionPlanner {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Obstacle Breach.
+        /// </summary>
+        public static string ObstacleBreach {
+            get {
+                return ResourceManager.GetString("ObstacleBreach", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Obtain From Module.
         /// </summary>
         public static string ObtainFromModule {

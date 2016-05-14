@@ -596,7 +596,8 @@ Please contact your hardware vendor about signing your hardware.</value>
   </data>
   <data name="Converting_bin_to_log" xml:space="preserve">
     <value>Converting bin to log</value>
-  </data>  <data name="UpdateNotFound" xml:space="preserve">
+  </data>
+  <data name="UpdateNotFound" xml:space="preserve">
     <value>No update available.</value>
   </data>
   <data name="Failed_to_connect_to_SITL_instance" xml:space="preserve">
@@ -604,5 +605,8 @@ Please contact your hardware vendor about signing your hardware.</value>
   </data>
   <data name="Scanning_File" xml:space="preserve">
     <value>Scanning File</value>
+  </data>
+  <data name="ObstacleBreach" xml:space="preserve">
+    <value>Obstacle Breach</value>
   </data>
 </root>
