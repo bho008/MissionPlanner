@@ -130,5 +130,21 @@ namespace MissionPlanner.GCSViews
 
             }
         }
+        bool eggDropEnabled = false;
+
+        private void buttonEnableEggdrop_Click(object sender, EventArgs e)
+        {
+            if (!eggDropEnabled)
+            {
+                buttonEnableEggdrop.BackColor = Color.Green;
+                eggDropEnabled = true;
+            }
+            else
+            {
+                buttonEnableEggdrop.BackColor = Color.Red;
+                eggDropEnabled = false;
+            }
+
+        }
     }
 }

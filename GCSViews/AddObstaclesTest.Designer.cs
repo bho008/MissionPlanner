@@ -35,6 +35,7 @@
             this.testUploadWP = new System.Windows.Forms.Button();
             this.wpUploadStatus = new System.Windows.Forms.TextBox();
             this.drawBufferCheck = new System.Windows.Forms.CheckBox();
+            this.buttonEnableEggdrop = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // button1
@@ -68,7 +69,7 @@
             // 
             // buttonSDAEnable
             // 
-            this.buttonSDAEnable.Location = new System.Drawing.Point(12, 177);
+            this.buttonSDAEnable.Location = new System.Drawing.Point(28, 206);
             this.buttonSDAEnable.Name = "buttonSDAEnable";
             this.buttonSDAEnable.Size = new System.Drawing.Size(75, 23);
             this.buttonSDAEnable.TabIndex = 3;
@@ -106,11 +107,23 @@
             this.drawBufferCheck.UseVisualStyleBackColor = true;
             this.drawBufferCheck.CheckedChanged += new System.EventHandler(this.drawBufferCheck_CheckedChanged);
             // 
+            // buttonEnableEggdrop
+            // 
+            this.buttonEnableEggdrop.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.buttonEnableEggdrop.Location = new System.Drawing.Point(12, 177);
+            this.buttonEnableEggdrop.Name = "buttonEnableEggdrop";
+            this.buttonEnableEggdrop.Size = new System.Drawing.Size(107, 23);
+            this.buttonEnableEggdrop.TabIndex = 7;
+            this.buttonEnableEggdrop.Text = "Eggdrop Enable";
+            this.buttonEnableEggdrop.UseVisualStyleBackColor = true;
+            this.buttonEnableEggdrop.Click += new System.EventHandler(this.buttonEnableEggdrop_Click);
+            // 
             // AddObstaclesTest
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 261);
+            this.Controls.Add(this.buttonEnableEggdrop);
             this.Controls.Add(this.drawBufferCheck);
             this.Controls.Add(this.wpUploadStatus);
             this.Controls.Add(this.testUploadWP);
@@ -119,7 +132,7 @@
             this.Controls.Add(this.textBox1);
             this.Controls.Add(this.button1);
             this.Name = "AddObstaclesTest";
-            this.Text = "AddObstaclesTest";
+            this.Text = "UCR UAS Mystery Options";
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -134,5 +147,6 @@
         private System.Windows.Forms.Button testUploadWP;
         private System.Windows.Forms.TextBox wpUploadStatus;
         private System.Windows.Forms.CheckBox drawBufferCheck;
+        private System.Windows.Forms.Button buttonEnableEggdrop;
     }
 }
