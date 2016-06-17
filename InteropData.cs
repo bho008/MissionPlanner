@@ -39,16 +39,49 @@ namespace MissionPlanner
         public static bool enableSDA = false;
         double R = 6378137;
 
+        public static System.Timers.Timer msgTimer;
+        public static Queue<Locationwp> msgLocationWaypointsQueue = new Queue<Locationwp>();
+
         public InteropData()
         {
             //Obstacle_list = null;
             //Obstacle_list_reader = null;
             //InteropData_ = null;
             //InteropData_READER = null;
+            
         }
 
+        private void MsgTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (msgLocationWaypointsQueue.Count > 0)
+            {
+                //Console.WriteLine("hello");
+                Locationwp loc = msgLocationWaypointsQueue.Dequeue();
+                MainV2.comPort.setGuidedModeWP(loc);
+
+            }
+            //Console.WriteLine("hello1");
+            Console.WriteLine(msgLocationWaypointsQueue.Count);
+
+        }
+
+        public void createTimer()
+        {
+            msgTimer = new System.Timers.Timer();
+            msgTimer.Interval = 20;
+            msgTimer.Elapsed += MsgTimer_Elapsed;
+            msgTimer.AutoReset = true;
+            msgTimer.Enabled = true;
+        }
+
+        bool createTimerBool = true;
         public void pushObjectStationary(int id, double x, double y, double r, double h, bool stationary)
         {
+            if (createTimerBool)
+            {
+                createTimer();
+                createTimerBool = false;
+            }
             if (stationary && printStationary)
             {
                 if (id == 0 && Obstacle_list_stationary.Count > 0)
@@ -112,6 +145,7 @@ namespace MissionPlanner
         {
             MissionPlanner.GCSViews.FlightData.ObstaclesOverlayDataMoving.Clear();
             MissionPlanner.GCSViews.FlightData.InteropFun.Polygons.Clear();
+            MissionPlanner.GCSViews.FlightPlanner.ObstaclesOverlayPlanner.Clear();
 
             for (int i = 0; i < Obstacle_list_reader.Count; i++)
             {
@@ -134,6 +168,8 @@ namespace MissionPlanner
                         MissionPlanner.GCSViews.FlightData.ObstaclesOverlayDataStationary.Markers.Add(UCR_Obstacle_buffer);
                     }
                     MissionPlanner.GCSViews.FlightData.ObstaclesOverlayDataStationary.Markers.Add(UCR_Obstacle);
+                    //MissionPlanner.GCSViews.FlightPlanner.ObstaclesOverlayPlanner.Markers.Add(UCR_Obstacle);
+                    
 
                 }
                 if (drawBuffer)
@@ -142,6 +178,7 @@ namespace MissionPlanner
                 }
                 UCR_Obstacle.Color = Color.Blue;
                 MissionPlanner.GCSViews.FlightData.ObstaclesOverlayDataMoving.Markers.Add(UCR_Obstacle);
+                //MissionPlanner.GCSViews.FlightPlanner.ObstaclesOverlayPlanner.Markers.Add(UCR_Obstacle);
 
             }
             Obstacle_list_reader.Clear();
@@ -166,7 +203,16 @@ namespace MissionPlanner
                 polygonPoints.Add(mavPos);
 
                 GMapPolygon lineStat = new GMapPolygon(polygonPoints, "dist from obs");
+                lineStat.Stroke = new Pen(Color.MistyRose, 3);
                 //Console.Write(lineStat.Distance * 3280.84 + "\t"); //distance calculated in feet
+                if (obs.radius < 100)
+                {
+                    bufferDistance = obs.radius + 150;
+                }
+                else if(obs.radius >= 100)
+                {
+                    bufferDistance = obs.radius + 300;
+                }
                 if (lineStat.Distance * 3280.84 - obs.radius < bufferDistance)
                 {
 
@@ -178,12 +224,30 @@ namespace MissionPlanner
                     currLat = mavPos.Lat;
                     currLng = mavPos.Lng;
                     currAlt = MainV2.comPort.MAV.cs.alt / 3.28084;
-                    Console.WriteLine(currAlt);
+                    //Console.WriteLine(currAlt);
                     if (enableSDA)
                     {
+
+
                         Locationwp testWP = new Locationwp(); //initialize waypoint to nav to
                         testWP.id = (byte)MAVLink.MAV_CMD.WAYPOINT; //set testWP id to WAYPOINT
-                        if ((currBearing > 0 && currBearing < 90) || (currBearing > 270 && currLng < point.Lng))
+
+                        // Euler angle of flight path
+                        double ang = ((-currBearing) + 90) % 360;
+                        // distance to center of obstacle
+                        double d = Math.Sqrt(Math.Pow(currLat - obs.x, 2) + Math.Pow(currLng - obs.y, 2));
+                        // angle between current pos and center of obstacle
+                        double ang_d = Math.Atan((currLng - obs.y) / (currLat - obs.x));
+                        // angle of intersection triangle
+                        double theta = ang_d - ang; // pls work
+                        // closest distance between line and center of circle
+                        double closest_approach = Math.Sin(theta) * d;
+
+                        // there is a collision if closest approach smaller than obstacle radius.
+                        bool collision = (closest_approach < obs.radius);
+
+                        /*
+                        if ((currBearing > 0 && currBearing < 90) || (currBearing > 270 && currLng > point.Lng))
                         {
 
                             //new_latitude  = latitude  + (dy / r_earth) * (180 / pi);
@@ -198,12 +262,20 @@ namespace MissionPlanner
                             testWP.lng = point.Lng - (bufferDistance / R) * (180 / Math.PI) / Math.Cos(point.Lat * Math.PI / 180);
                             testWP.alt = (float)currAlt;
                         }
+                        */
 
-                        MainV2.comPort.setGuidedModeWP(testWP);
-
-
+                        if (collision)
+                        {
+                            testWP.lng = currLng + (currLng - obs.y);
+                            testWP.lat = currLat + (currLat - obs.x);
+                            testWP.alt = (float)currAlt;
+                            //MainV2.comPort.setGuidedModeWP(testWP);
+                            msgLocationWaypointsQueue.Enqueue(testWP);
+                        }
                     }
                 }
+
+
                 if (printDirectedLines)
                 {
                     MissionPlanner.GCSViews.FlightData.interopPolygonOverlay.Polygons.Add(lineStat);
@@ -217,7 +289,7 @@ namespace MissionPlanner
             polygonPoints.Add(point);
             polygonPoints.Add(mavPos);
             GMapPolygon line = new GMapPolygon(polygonPoints, "dist from obs");
-            line.Stroke = new Pen(Color.PapayaWhip);
+            line.Stroke = new Pen(Color.MistyRose, 3);
             if (printDirectedLines)
             {
                 MissionPlanner.GCSViews.FlightData.InteropFun.Polygons.Add(line);

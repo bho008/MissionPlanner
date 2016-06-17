@@ -71,9 +71,9 @@
             // 
             // buttonSDAEnable
             // 
-            this.buttonSDAEnable.Location = new System.Drawing.Point(28, 257);
+            this.buttonSDAEnable.Location = new System.Drawing.Point(12, 344);
             this.buttonSDAEnable.Name = "buttonSDAEnable";
-            this.buttonSDAEnable.Size = new System.Drawing.Size(75, 23);
+            this.buttonSDAEnable.Size = new System.Drawing.Size(115, 81);
             this.buttonSDAEnable.TabIndex = 3;
             this.buttonSDAEnable.Text = "SDA Enable";
             this.buttonSDAEnable.UseVisualStyleBackColor = true;
@@ -112,9 +112,9 @@
             // buttonEnableEggdrop
             // 
             this.buttonEnableEggdrop.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.buttonEnableEggdrop.Location = new System.Drawing.Point(12, 228);
+            this.buttonEnableEggdrop.Location = new System.Drawing.Point(12, 184);
             this.buttonEnableEggdrop.Name = "buttonEnableEggdrop";
-            this.buttonEnableEggdrop.Size = new System.Drawing.Size(107, 23);
+            this.buttonEnableEggdrop.Size = new System.Drawing.Size(115, 110);
             this.buttonEnableEggdrop.TabIndex = 7;
             this.buttonEnableEggdrop.Text = "Eggdrop Enable";
             this.buttonEnableEggdrop.UseVisualStyleBackColor = true;
@@ -147,7 +147,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(309, 380);
+            this.ClientSize = new System.Drawing.Size(382, 437);
             this.Controls.Add(this.drawLinesCheck);
             this.Controls.Add(this.drawMissionBounderies);
             this.Controls.Add(this.buttonEnableEggdrop);

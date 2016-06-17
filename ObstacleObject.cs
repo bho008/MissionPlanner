@@ -26,8 +26,8 @@ namespace MissionPlanner
         public ObstacleObject(int i, double lat, double lng, double rad, double h, bool sta)
         {
             id = i;
-            x = lat;
-            y = lng;
+            x = lng;
+            y = lat;
             radius = rad;
             height = h;
             stationary = sta;

@@ -32,11 +32,7 @@ namespace MissionPlanner.GCSViews
 
         private void drawObstacles()
         {
-            //InteropData.InteropData_READER.
-            while (start)
-            {
-                Console.WriteLine("hello");
-            }
+
         }
 
         private void button1_Click(object sender, EventArgs e)
