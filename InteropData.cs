@@ -22,6 +22,7 @@ namespace MissionPlanner
         static List<ObstacleStruct> Obstacle_list_reader = new List<ObstacleStruct>();
         static List<ObstacleStruct> Obstacle_list_stationary_final = new List<ObstacleStruct>();
         public static bool printStationary = true;
+        public static bool printDirectedLines = true;
         public double shortestDistanceToObs = 99999;
 
         public static bool drawBuffer = true;
@@ -110,6 +111,7 @@ namespace MissionPlanner
         public void printObjects()
         {
             MissionPlanner.GCSViews.FlightData.ObstaclesOverlayDataMoving.Clear();
+            MissionPlanner.GCSViews.FlightData.InteropFun.Polygons.Clear();
 
             for (int i = 0; i < Obstacle_list_reader.Count; i++)
             {
@@ -202,20 +204,24 @@ namespace MissionPlanner
 
                     }
                 }
-
-                MissionPlanner.GCSViews.FlightData.interopPolygonOverlay.Polygons.Add(lineStat);
+                if (printDirectedLines)
+                {
+                    MissionPlanner.GCSViews.FlightData.interopPolygonOverlay.Polygons.Add(lineStat);
+                }
             }
         }
 
         public void drawLines(PointLatLng point, PointLatLng mavPos)
         {
-            MissionPlanner.GCSViews.FlightData.InteropFun.Polygons.Clear();
             List<PointLatLng> polygonPoints = new List<PointLatLng>();
             polygonPoints.Add(point);
             polygonPoints.Add(mavPos);
             GMapPolygon line = new GMapPolygon(polygonPoints, "dist from obs");
-            line.Stroke.Color = Color.PapayaWhip;
-            MissionPlanner.GCSViews.FlightData.InteropFun.Polygons.Add(line);
+            line.Stroke = new Pen(Color.PapayaWhip);
+            if (printDirectedLines)
+            {
+                MissionPlanner.GCSViews.FlightData.InteropFun.Polygons.Add(line);
+            }
         }
 
         public PointLatLngAlt getCurrentMavLocation()

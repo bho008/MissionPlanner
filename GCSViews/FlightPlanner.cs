@@ -495,6 +495,9 @@ namespace MissionPlanner.GCSViews
             drawnpolygonsoverlay = new GMapOverlay("drawnpolygons");
             MainMap.Overlays.Add(drawnpolygonsoverlay);
 
+            CompetitionOverlay = new GMapOverlay("competition overlay 2016 flight data");
+            MainMap.Overlays.Add(CompetitionOverlay);
+
             MainMap.Overlays.Add(poioverlay);
 
             top = new GMapOverlay("top");
@@ -2757,6 +2760,7 @@ namespace MissionPlanner.GCSViews
         public static GMapOverlay airportsoverlay;
         public static GMapOverlay poioverlay = new GMapOverlay("POI"); // poi layer
         public static GMapOverlay ObstaclesOverlayPlanner; // this is where we will add our obstacles
+        public static GMapOverlay CompetitionOverlay; // this is where we will add our overlay views for the 2016 year
 
         GMapOverlay drawnpolygonsoverlay;
         GMapOverlay kmlpolygonsoverlay;

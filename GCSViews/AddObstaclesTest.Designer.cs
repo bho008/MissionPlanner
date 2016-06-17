@@ -36,6 +36,8 @@
             this.wpUploadStatus = new System.Windows.Forms.TextBox();
             this.drawBufferCheck = new System.Windows.Forms.CheckBox();
             this.buttonEnableEggdrop = new System.Windows.Forms.Button();
+            this.drawMissionBounderies = new System.Windows.Forms.Button();
+            this.drawLinesCheck = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // button1
@@ -69,7 +71,7 @@
             // 
             // buttonSDAEnable
             // 
-            this.buttonSDAEnable.Location = new System.Drawing.Point(28, 206);
+            this.buttonSDAEnable.Location = new System.Drawing.Point(28, 257);
             this.buttonSDAEnable.Name = "buttonSDAEnable";
             this.buttonSDAEnable.Size = new System.Drawing.Size(75, 23);
             this.buttonSDAEnable.TabIndex = 3;
@@ -79,7 +81,7 @@
             // 
             // testUploadWP
             // 
-            this.testUploadWP.Location = new System.Drawing.Point(162, 177);
+            this.testUploadWP.Location = new System.Drawing.Point(162, 228);
             this.testUploadWP.Name = "testUploadWP";
             this.testUploadWP.Size = new System.Drawing.Size(99, 23);
             this.testUploadWP.TabIndex = 4;
@@ -99,7 +101,7 @@
             this.drawBufferCheck.AutoSize = true;
             this.drawBufferCheck.Checked = true;
             this.drawBufferCheck.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.drawBufferCheck.Location = new System.Drawing.Point(190, 232);
+            this.drawBufferCheck.Location = new System.Drawing.Point(190, 283);
             this.drawBufferCheck.Name = "drawBufferCheck";
             this.drawBufferCheck.Size = new System.Drawing.Size(82, 17);
             this.drawBufferCheck.TabIndex = 6;
@@ -110,7 +112,7 @@
             // buttonEnableEggdrop
             // 
             this.buttonEnableEggdrop.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.buttonEnableEggdrop.Location = new System.Drawing.Point(12, 177);
+            this.buttonEnableEggdrop.Location = new System.Drawing.Point(12, 228);
             this.buttonEnableEggdrop.Name = "buttonEnableEggdrop";
             this.buttonEnableEggdrop.Size = new System.Drawing.Size(107, 23);
             this.buttonEnableEggdrop.TabIndex = 7;
@@ -118,11 +120,36 @@
             this.buttonEnableEggdrop.UseVisualStyleBackColor = true;
             this.buttonEnableEggdrop.Click += new System.EventHandler(this.buttonEnableEggdrop_Click);
             // 
+            // drawMissionBounderies
+            // 
+            this.drawMissionBounderies.Location = new System.Drawing.Point(162, 85);
+            this.drawMissionBounderies.Name = "drawMissionBounderies";
+            this.drawMissionBounderies.Size = new System.Drawing.Size(99, 63);
+            this.drawMissionBounderies.TabIndex = 8;
+            this.drawMissionBounderies.Text = "Draw Mission Boundaries";
+            this.drawMissionBounderies.UseVisualStyleBackColor = true;
+            this.drawMissionBounderies.Click += new System.EventHandler(this.drawMissionBounderies_Click);
+            // 
+            // drawLinesCheck
+            // 
+            this.drawLinesCheck.AutoSize = true;
+            this.drawLinesCheck.Checked = true;
+            this.drawLinesCheck.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.drawLinesCheck.Location = new System.Drawing.Point(190, 262);
+            this.drawLinesCheck.Name = "drawLinesCheck";
+            this.drawLinesCheck.Size = new System.Drawing.Size(79, 17);
+            this.drawLinesCheck.TabIndex = 9;
+            this.drawLinesCheck.Text = "Draw Lines";
+            this.drawLinesCheck.UseVisualStyleBackColor = true;
+            this.drawLinesCheck.CheckedChanged += new System.EventHandler(this.drawLinesCheck_CheckedChanged);
+            // 
             // AddObstaclesTest
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 261);
+            this.ClientSize = new System.Drawing.Size(309, 380);
+            this.Controls.Add(this.drawLinesCheck);
+            this.Controls.Add(this.drawMissionBounderies);
             this.Controls.Add(this.buttonEnableEggdrop);
             this.Controls.Add(this.drawBufferCheck);
             this.Controls.Add(this.wpUploadStatus);
@@ -148,5 +175,7 @@
         private System.Windows.Forms.TextBox wpUploadStatus;
         private System.Windows.Forms.CheckBox drawBufferCheck;
         private System.Windows.Forms.Button buttonEnableEggdrop;
+        private System.Windows.Forms.Button drawMissionBounderies;
+        private System.Windows.Forms.CheckBox drawLinesCheck;
     }
 }
