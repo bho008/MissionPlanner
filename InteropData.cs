@@ -61,7 +61,7 @@ namespace MissionPlanner
 
             }
             //Console.WriteLine("hello1");
-            Console.WriteLine(msgLocationWaypointsQueue.Count);
+            //Console.WriteLine(msgLocationWaypointsQueue.Count);
 
         }
 
@@ -184,12 +184,16 @@ namespace MissionPlanner
             Obstacle_list_reader.Clear();
         }
 
+        public bool autoMode = true;
+        bool setToAuto = true;
+        bool takeover = false;
         public void drawLinesStationaryObs(PointLatLng mavPos)
         {
             //Console.WriteLine("obstacle stationary list count: " + Obstacle_list_stationary_final.Count);
             MissionPlanner.GCSViews.FlightData.interopPolygonOverlay.Polygons.Clear();
             breachedId = -1;
             breached = false;
+            bool withinBuffer = false;
             for (int i = 0; i < Obstacle_list_stationary_final.Count; i++)
             {
                 //ObstacleObject obs = Obstacle_list_stationary_final.ElementAt(i);
@@ -205,6 +209,7 @@ namespace MissionPlanner
                 GMapPolygon lineStat = new GMapPolygon(polygonPoints, "dist from obs");
                 lineStat.Stroke = new Pen(Color.MistyRose, 3);
                 //Console.Write(lineStat.Distance * 3280.84 + "\t"); //distance calculated in feet
+                /*
                 if (obs.radius < 100)
                 {
                     bufferDistance = obs.radius + 150;
@@ -212,15 +217,27 @@ namespace MissionPlanner
                 else if(obs.radius >= 100)
                 {
                     bufferDistance = obs.radius + 300;
+                }*/
+                bufferDistance = obs.radius + 300;
+                //else MainV2.comPort.setMode("AUTO");
+                //MainV2.comPort.setMode("AUTO");
+                if (setToAuto)
+                {
+                //    MainV2.comPort.setMode("AUTO");
+                    setToAuto = false;
                 }
+
+
                 if (lineStat.Distance * 3280.84 - obs.radius < bufferDistance)
                 {
+                    withinBuffer = true;
 
                     //Console.WriteLine(lineStat.Distance * 3280.84 - obs.radius + "\t");
 
                     breached = true;
                     breachedId = i;
                     currBearing = MainV2.comPort.MAV.cs.nav_bearing;
+                    double currHeading = MainV2.comPort.MAV.cs.yaw;
                     currLat = mavPos.Lat;
                     currLng = mavPos.Lng;
                     currAlt = MainV2.comPort.MAV.cs.alt / 3.28084;
@@ -231,20 +248,68 @@ namespace MissionPlanner
 
                         Locationwp testWP = new Locationwp(); //initialize waypoint to nav to
                         testWP.id = (byte)MAVLink.MAV_CMD.WAYPOINT; //set testWP id to WAYPOINT
-
+                        
                         // Euler angle of flight path
-                        double ang = ((-currBearing) + 90) % 360;
+                        double ang = -((currHeading-450) % 360);
+                        /*
                         // distance to center of obstacle
                         double d = Math.Sqrt(Math.Pow(currLat - obs.x, 2) + Math.Pow(currLng - obs.y, 2));
                         // angle between current pos and center of obstacle
-                        double ang_d = Math.Atan((currLng - obs.y) / (currLat - obs.x));
+                        double ang_d = Math.Atan((currLat - obs.x) / (currLng - obs.y));
                         // angle of intersection triangle
-                        double theta = ang_d - ang; // pls work
+                        double theta = (ang - ang_d); // pls work
+                        // hypotenuse of triangle
+                        double hype = (d / Math.Cos(theta));
                         // closest distance between line and center of circle
-                        double closest_approach = Math.Sin(theta) * d;
+                        double closest_approach = Math.Abs(Math.Sin(theta) * hype);
 
+                        bool collision = (closest_approach < radius);
+
+                        // if we are past the circle, no collision is possible.
+                        if (Math.Sign(Math.Sin(ang)) != Math.Sign(currLng - obs.x) &&
+                            Math.Sign(Math.Cos(ang)) != Math.Sign(currLat - obs.y))
+                        {
+                            Console.WriteLine("Past center of obstacle.");
+                         //   collision = false;
+                        }
+
+                        Console.WriteLine("Bearing: " + currBearing);
+                        Console.WriteLine("Angle: " + ang);
+                        Console.WriteLine("Closest approach: " + closest_approach);
+                        Console.WriteLine("Collision: " + collision);
+                        */
+
+                        // Collision Detection TAKE 2
+                        bool collision = false;
+                        bool collisionLeft = false;
+                        bool collisionRight = false;
+                        bool collisionCenter = false;
+                        double rads = (ang/180)*Math.PI;
                         // there is a collision if closest approach smaller than obstacle radius.
-                        bool collision = (closest_approach < obs.radius);
+                        double radius = (obs.radius / R) * (180 / Math.PI);
+                        double interval = 0.0001;
+                   //     GCSViews.FlightData.CompetitionOverlayOPArea.Markers.Clear();
+                        for (int iter = 1; iter <= 10; iter++)
+                        {
+                            for (int width = -1; width <= 1; width++)
+                            {
+                                double test_x = currLng + Math.Cos(rads + width*0.2) * (interval * iter);
+                                double test_y = currLat + Math.Sin(rads + width*0.2) * (interval * iter);
+
+                                //PointLatLng testpt = new PointLatLng(test_y, test_x);
+                                //GMapMarker testmarker = new GMapMarkerPOI(testpt);
+                                //GCSViews.FlightData.CompetitionOverlayOPArea.Markers.Add(testmarker);
+
+                                if (Math.Sqrt(Math.Pow(test_x - obs.y, 2) + Math.Pow(test_y - obs.x, 2)) <= radius)
+                                {
+                                    if (width == -1) collisionLeft = true;
+                                    if (width == 1) collisionRight = true;
+                                    if (width == 0) collisionCenter = true;
+                                    collision = true;
+                                    break;
+                                }
+                            }
+                        }
 
                         /*
                         if ((currBearing > 0 && currBearing < 90) || (currBearing > 270 && currLng > point.Lng))
@@ -271,8 +336,25 @@ namespace MissionPlanner
                             testWP.alt = (float)currAlt;
                             //MainV2.comPort.setGuidedModeWP(testWP);
                             msgLocationWaypointsQueue.Enqueue(testWP);
+                            autoMode = false;
+                            takeover = false;
+                        } 
+                        else if(!takeover) {
+                            testWP.lng = currLng + Math.Cos(rads) * (interval * 20);
+                            testWP.lat = currLat + Math.Sin(rads) * (interval * 20);
+                            testWP.alt = (float)currAlt;
+                            takeover = true;
+
+                            //MainV2.comPort.setGuidedModeWP(testWP);
+                            msgLocationWaypointsQueue.Enqueue(testWP);
+                            autoMode = false;
                         }
                     }
+                } else if(!withinBuffer)
+                {
+                    // return to  mission
+                    MainV2.comPort.setMode("AUTO");
+                    takeover = false;
                 }
 
 

@@ -1130,8 +1130,8 @@ namespace MissionPlanner
 
                     if (InteropData.breached)
                     {
-                        messageHigh = Strings.ObstacleBreach;
-                        messageHighTime = DateTime.Now;
+                        //messageHigh = Strings.ObstacleBreach;
+                        //messageHighTime = DateTime.Now;
 
                     }
 
